@@ -107,7 +107,7 @@ if (__name__ == "__main__"):
     prolog_files = []
     call_graph   = {}
 
-    os.system("mkdir ./prolog_explorer_output/")
+    os.system("mkdir -p ./prolog_explorer_output/")
 
     # Obtain all program source files.
     for path, subdirs, files in os.walk("."):

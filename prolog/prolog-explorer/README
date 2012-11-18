@@ -1,0 +1,8 @@
+Make sure the swi-prolog binary is in your path. 
+Run with python 2.
+Just copy both files to the source tree of your code,
+and run prolog_graph.py in that directory.
+It will create a directory "prolog_explorer_output"
+containing a pdf file with the predicate call graph 
+of your program.
+
