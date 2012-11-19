@@ -1,0 +1,3 @@
+The mesh.erl module contains functions that produce 3D meshes of sphere
+tesselations, produced by subdividing a tetrahedron, octahedron or icosahedron.
+Output is in OFF format.
