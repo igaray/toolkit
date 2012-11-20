@@ -7,7 +7,6 @@
 
 % The mesh record represents a sphere during the generation phase. 
 % The mesh is represented by a number of vertices on the surface of a sphere.
-% Each vertex is a column of cells, each cell representing a volume one kilometer high.
 %
 % The first element, number_of_vertices, is the number of vertices in the mesh. 
 % This number should agree with the length of the fourth element.
@@ -33,12 +32,6 @@
     number_of_edges,
     vertices,
     faces } ).
-
-%-record(cell, {
-%    height,
-%    composition, 
-%    temperature,
-%    pressure } ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -118,7 +111,7 @@ initialize_mesh( icosahedron ) ->
              {  1, { -Tau,  One,  0.0 } },
              {  0, {  Tau,  One,  0.0 } }],
         faces =
-            [{ 19, {  6, 10,  2 } },        
+            [{ 19, {  6, 10,  2 } },
              { 18, {  7,  2,  9 } },
              { 17, {  6,  1, 11 } },
              { 16, {  7,  8,  1 } },
@@ -155,7 +148,8 @@ subdivide_once( Mesh ) ->
     Old_Faces               = Mesh#mesh.faces,
     New_Number_of_Edges     = 2 * Old_Number_of_Vertices + 3 * Old_Number_of_Faces,
 
-    { New_Number_of_Vertices, New_Number_of_Faces, New_Vertices, New_Faces } = subdivide_face( Old_Faces, Old_Number_of_Vertices, 0, Old_Vertices, [], [] ),
+    { New_Number_of_Vertices, New_Number_of_Faces, New_Vertices, New_Faces } = 
+        subdivide_face( Old_Faces, Old_Number_of_Vertices, 0, Old_Vertices, [], [] ),
     
     #mesh{
         number_of_vertices  = New_Number_of_Vertices,
@@ -184,9 +178,14 @@ subdivide_face( [Face|Faces],
 
     % The number of vertices, the list of vertices, and the list of midpoints are all passed to 
     % midpoint/5 and returned in a tuple because they may be modified. 
-    { AB_midpoint, Number_of_Vertices1, Vertices1, Midpoints1 } = midpoint( A, B, Number_of_Vertices,  Vertices,  Midpoints  ),
-    { BC_midpoint, Number_of_Vertices2, Vertices2, Midpoints2 } = midpoint( B, C, Number_of_Vertices1, Vertices1, Midpoints1 ),
-    { CA_midpoint, Number_of_Vertices3, Vertices3, Midpoints3 } = midpoint( C, A, Number_of_Vertices2, Vertices2, Midpoints2 ),
+    { AB_midpoint, Number_of_Vertices1, Vertices1, Midpoints1 } = 
+        midpoint( A, B, Number_of_Vertices,  Vertices,  Midpoints  ),
+
+    { BC_midpoint, Number_of_Vertices2, Vertices2, Midpoints2 } = 
+        midpoint( B, C, Number_of_Vertices1, Vertices1, Midpoints1 ),
+
+    { CA_midpoint, Number_of_Vertices3, Vertices3, Midpoints3 } = 
+        midpoint( C, A, Number_of_Vertices2, Vertices2, Midpoints2 ),
 
     Face1 = { Number_of_Faces + 1, { A,           AB_midpoint, CA_midpoint } },
     Face2 = { Number_of_Faces + 2, { CA_midpoint, AB_midpoint, BC_midpoint } },
@@ -231,15 +230,23 @@ midpoint( Start, End, Number_of_Vertices, Vertices, Midpoints ) ->
 
 %--------------------------------------------------------------------------------------------------%
 
-exists( _, _, [] ) -> false;
-exists( Start, End, [ { S, M, E } | _] ) when ( ( ( S == Start ) and ( E == End ) ) or ( ( S == End ) and ( E == Start ) ) ) -> M;
-exists( Start, End, [ _ | Midpoints] ) -> exists( Start, End, Midpoints ).
+exists( _, _, [] ) -> 
+    false;
+exists( Start, End, [ { S, M, E } | _] ) 
+    when (  ( ( S == Start ) and ( E == End ) ) 
+         or ( ( S == End ) and ( E == Start ) ) ) -> 
+    M;
+exists( Start, End, [ _ | Midpoints] ) -> 
+    exists( Start, End, Midpoints ).
 
 %--------------------------------------------------------------------------------------------------%
 
-get_mesh_vertex( [],                           _     ) -> error;
-get_mesh_vertex( [{ Index, Coordinates } | _], Index ) -> { Index, Coordinates };
-get_mesh_vertex( [ _ | Vertices]             , Index ) -> get_mesh_vertex( Vertices, Index ).
+get_mesh_vertex( [],                           _     ) -> 
+    error;
+get_mesh_vertex( [{ Index, Coordinates } | _], Index ) -> 
+    { Index, Coordinates };
+get_mesh_vertex( [ _ | Vertices]             , Index ) -> 
+    get_mesh_vertex( Vertices, Index ).
 
 %--------------------------------------------------------------------------------------------------%
 
