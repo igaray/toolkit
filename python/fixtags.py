@@ -1,4 +1,16 @@
 #!/usr/bin/python2
+
+# This script requires mutagen and pyid3lib.
+# To use it, put it in your path, or copy it to a folder containing your mp3 files.
+# It makes the following assumptions, all of which are reasonable in MY collection.
+# - Every filename is of the form "NN <title>.mp3", 
+#   where NN is the track number leading 0, and <title> is the title of the song.
+# - The files in the current folder all correspond to the same album.
+# - The current folder name is of the form "NNNN <album>", 
+#   where NNNN is the year the album was released and <album> is the name of the album.
+# - The current folder's parent folder is the name of the artist.
+# - You like having the year included in the album name, so that retarded mp3 players sort
+#   albums in the correct order (chronologically, not alphabetically).
 import os
 import tty
 import sys
@@ -42,7 +54,7 @@ for filename in files:
 print "ok? (y/n)"
 ch = getch()
 if ch == 'y': 
-    print "you said yes! here goes..."
+    print "you said aye! here we go..."
     for filename in files:
         basename, ext = os.path.splitext(filename)
         track = basename[:2]
