@@ -15,6 +15,7 @@ import os
 import tty
 import sys
 import termios
+import argparse
 import pyid3lib
 import mutagen.mp3
 
@@ -32,47 +33,61 @@ def ismp3(filename):
     _, ext = os.path.splitext(filename)
     return ext == ".mp3"
 
-cwd    = os.getcwd()
-path   = cwd.split("/")
-artist = path[-2]
-album  = path[-1]
-year   = album[:4]
-files  = filter(ismp3, os.listdir(cwd))
-files.sort()
-print "artist: ", artist
-print "album:  ", album
-print "year:   ", year
-print "files:"
-for filename in files:
-    basename, ext = os.path.splitext(filename)
-    track = basename[:2]
-    name  = basename[3:]
-    print "    track: ", track
-    print "    name:  ", name
-    print "-" * 80
+def main(options):
+    cwd    = os.getcwd()
+    path   = cwd.split("/")
 
-print "ok? (y/n)"
-ch = getch()
-if ch == 'y': 
-    print "you said aye! here we go..."
+    if options.multicd:
+        artist = path[-3]
+        album = path[-2]
+        pass
+    else:
+        artist = path[-2]
+        album = path[-1]
+
+    year = album[:4]    
+
+    files = filter(ismp3, os.listdir(cwd))
+    files.sort()
+
+    print "artist: ", artist
+    print "album:  ", album
+    print "year:   ", year
+    print "files:"
     for filename in files:
         basename, ext = os.path.splitext(filename)
         track = basename[:2]
         name  = basename[3:]
-        try:
-            mutagen_tag = mutagen.mp3.MP3(filename)
-            mutagen_tag.delete()
-            mutagen_tag.save()
-        except:
-            pass
-        pyid3_tag = pyid3lib.tag(filename)
-        pyid3_tag.artist = artist
-        pyid3_tag.album  = album
-        pyid3_tag.year   = year
-        pyid3_tag.track  = track
-        pyid3_tag.update()
-elif ch == 'n':
-    print "dinna trust, me, eh laddie?"
-else:
-    print "you hafta choose y or n!"
+        print "    track: ", track, "name:  ", name
+        print "-" * 80
 
+    print "ok? (y/n)"
+    ch = getch()
+    if ch == 'y': 
+        print "you said aye! here we go..."
+        for filename in files:
+            basename, ext = os.path.splitext(filename)
+            track = basename[:2]
+            name  = basename[3:]
+            try:
+                mutagen_tag = mutagen.mp3.MP3(filename)
+                mutagen_tag.delete()
+                mutagen_tag.save()
+            except:
+                pass
+            pyid3_tag = pyid3lib.tag(filename)
+            pyid3_tag.artist = artist
+            pyid3_tag.album  = album
+            pyid3_tag.year   = year
+            pyid3_tag.track  = track
+            pyid3_tag.update()
+    elif ch == 'n':
+        print "dinna trust, me, eh laddie?"
+    else:
+        print "you hafta choose y or n!"
+
+if (__name__ == "__main__"):
+    parser = argparse.ArgumentParser(description = "Clean id3 tags of mp3 files in current directory.")
+    parser.add_argument("-m", dest="multicd", action='store_true')
+    args = parser.parse_args()
+    main(args)
