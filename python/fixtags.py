@@ -11,13 +11,69 @@
 # - The current folder's parent folder is the name of the artist.
 # - You like having the year included in the album name, so that retarded mp3 players sort
 #   albums in the correct order (chronologically, not alphabetically).
+
+# This is the list of tags the mutagen EasyID3 class can handle:
+# album
+# albumartistsort
+# albumsort
+# arranger
+# artist
+# artistsort
+# asin
+# author
+# barcode
+# bpm
+# compilation
+# composer
+# composersort
+# conductor
+# copyright
+# date
+# discnumber
+# discsubtitle
+# encodedby
+# genre
+# isrc
+# length
+# lyricist
+# media
+# mood
+# musicbrainz_albumartistid
+# musicbrainz_albumid
+# musicbrainz_albumstatus
+# musicbrainz_albumtype
+# musicbrainz_artistid
+# musicbrainz_discid
+# musicbrainz_trackid
+# musicbrainz_trmid
+# musicip_fingerprint
+# musicip_puid
+# organization
+# performer
+# performer:*
+# releasecountry
+# replaygain_*_gain
+# replaygain_*_peak
+# title
+# titlesort
+# tracknumber
+# version
+# website
+
 import os
 import tty
 import sys
 import termios
 import argparse
-import pyid3lib
 import mutagen.mp3
+import mutagen.easyid3
+
+VERSION = 19
+NO_MP3_FILES = "I cannae find any mp3 files in the current directory!"
+YES_MSG      = "You said aye! here we go..."
+NO_MSG       = "Dinna trust, me, eh laddie?"
+UNKNOWN_MSG  = "You hafta choose y or n!"
+MUTAGEN_ERR  = "Error while processing"
 
 def getch():
     fd = sys.stdin.fileno()
@@ -34,21 +90,24 @@ def ismp3(filename):
     return ext == ".mp3"
 
 def main(options):
-    cwd    = os.getcwd()
+    print "version:", VERSION
+    cwd    = unicode( os.getcwd(), "utf-8" )
     path   = cwd.split("/")
 
     if options.multicd:
         artist = path[-3]
-        album = path[-2]
-        pass
+        album  = path[-2] + " " + path[-1]
+        year   = path[-2][:4]
     else:
         artist = path[-2]
-        album = path[-1]
-
-    year = album[:4]    
+        album  = path[-1]
+        year   = path[-1][:4]
 
     files = filter(ismp3, os.listdir(cwd))
     files.sort()
+    if not files:
+        print NO_MP3_FILES
+        exit()
 
     print "artist: ", artist
     print "album:  ", album
@@ -56,35 +115,40 @@ def main(options):
     print "files:"
     for filename in files:
         basename, ext = os.path.splitext(filename)
-        track = basename[:2]
-        name  = basename[3:]
-        print "    track: ", track, "name:  ", name
-        print "-" * 80
+        track    = basename[:2]
+        name     = basename[3:]
+        print "  track:", track, "title:", name
+    print "-" * 80
 
     print "ok? (y/n)"
     ch = getch()
     if ch == 'y': 
-        print "you said aye! here we go..."
+        print YES_MSG
         for filename in files:
             basename, ext = os.path.splitext(filename)
             track = basename[:2]
-            name  = basename[3:]
+            title = basename[3:]
             try:
                 mutagen_tag = mutagen.mp3.MP3(filename)
                 mutagen_tag.delete()
-                mutagen_tag.save()
             except:
                 pass
-            pyid3_tag = pyid3lib.tag(filename)
-            pyid3_tag.artist = artist
-            pyid3_tag.album  = album
-            pyid3_tag.year   = year
-            pyid3_tag.track  = track
-            pyid3_tag.update()
+
+            try:
+                mutagen_tag = mutagen.mp3.MP3(filename, ID3=mutagen.easyid3.EasyID3)
+                mutagen_tag["artist"]      = artist
+                mutagen_tag["album"]       = album
+                mutagen_tag["date"]        = year
+                mutagen_tag["tracknumber"] = track
+                mutagen_tag["title"]       = title
+                mutagen_tag.save()
+            except:
+                print MUTAGEN_ERR, filename
+        print
     elif ch == 'n':
-        print "dinna trust, me, eh laddie?"
+        print NO_MSG
     else:
-        print "you hafta choose y or n!"
+        print UNKNOWN_MSG
 
 if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description = "Clean id3 tags of mp3 files in current directory.")
