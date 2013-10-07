@@ -90,7 +90,7 @@ def ismp3(filename):
     return ext == ".mp3"
 
 def main(options):
-    print "version:", VERSION
+    #print "version:", VERSION
     cwd    = unicode( os.getcwd(), "utf-8" )
     path   = cwd.split("/")
 
@@ -117,7 +117,7 @@ def main(options):
         basename, ext = os.path.splitext(filename)
         track    = basename[:2]
         name     = basename[3:]
-        print "  track:", track, "title:", name
+        print "  ", track, name
     print "-" * 80
 
     print "ok? (y/n)"
