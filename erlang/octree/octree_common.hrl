@@ -3,7 +3,7 @@ base_case(Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) ->
     (Xmin == Xmax) andalso (Ymin == Ymax) andalso (Zmin == Zmax).
     
 %--------------------------------------------------------------------------------------------------%
-% X, Y, Z are the coordinates where we are insertingbase false clause Data
+% X, Y, Z are the coordinates where we are inserting
 % Xmin, YMin, Zmin are the coordinates of the lower-top-left point
 % Xmax, Ymax, Zmax are the coordinates of the upper-bottom-right point
 % (X, Y, Y) is checked to see into which octant it falls. Depending on the result, the Data elements
