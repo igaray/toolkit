@@ -3012,6 +3012,14 @@ verses = [
 
 from subprocess import call
 if __name__ == "__main__":
-  random.seed()
-  call("clear")
-  print(verses[random.randint(0, 63)])
+    random.seed()
+    call("clear")
+    print(verses[random.randint(0, 63)])
+
+    lines = []
+    for i in range(6):
+        coin1 = random.randint(2, 3)
+        coin2 = random.randint(2, 3)
+        coin3 = random.randint(2, 3)
+        lines.append(coin1 + coin2 + coin3)
+    print(lines)
