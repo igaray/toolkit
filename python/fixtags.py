@@ -3,10 +3,10 @@
 # This script requires mutagen and pyid3lib.
 # To use it, put it in your path, or copy it to a folder containing your mp3 files.
 # It makes the following assumptions, all of which are reasonable in MY collection.
-# - Every filename is of the form "NN <title>.mp3", 
+# - Every filename is of the form "NN <title>.mp3",
 #   where NN is the track number leading 0, and <title> is the title of the song.
 # - The files in the current folder all correspond to the same album.
-# - The current folder name is of the form "NNNN <album>", 
+# - The current folder name is of the form "NNNN <album>",
 #   where NNNN is the year the album was released and <album> is the name of the album.
 # - The current folder's parent folder is the name of the artist.
 # - You like having the year included in the album name, so that retarded mp3 players sort
@@ -96,11 +96,11 @@ def main(options):
 
     if options.multicd:
         artist = path[-3]
-        album  = path[-2] + " " + path[-1]
+        album  = path[-2][5:] + " " + path[-1]
         year   = path[-2][:4]
     else:
         artist = path[-2]
-        album  = path[-1]
+        album  = path[-1][5:]
         year   = path[-1][:4]
 
     files = filter(ismp3, os.listdir(cwd))
@@ -122,7 +122,7 @@ def main(options):
 
     print "ok? (y/n)"
     ch = getch()
-    if ch == 'y': 
+    if ch == 'y':
         print YES_MSG
         for filename in files:
             basename, ext = os.path.splitext(filename)
