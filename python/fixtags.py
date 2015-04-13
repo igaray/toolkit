@@ -95,11 +95,17 @@ def main(options):
     path   = cwd.split("/")
 
     if options.multicd:
-        artist = path[-3]
+        if options.categorized:
+            artist = path[-4]
+        else:
+            artist = path[-3]
         album  = path[-2][5:] + " " + path[-1]
         year   = path[-2][:4]
     else:
-        artist = path[-2]
+        if options.categorized:
+            artist = path[-3]
+        else:
+            artist = path[-2]
         album  = path[-1][5:]
         year   = path[-1][:4]
 
@@ -153,5 +159,6 @@ def main(options):
 if (__name__ == "__main__"):
     parser = argparse.ArgumentParser(description = "Clean id3 tags of mp3 files in current directory.")
     parser.add_argument("-m", dest="multicd", action='store_true')
+    parser.add_argument("-c", dest="categorized", action='store_true')
     args = parser.parse_args()
     main(args)
