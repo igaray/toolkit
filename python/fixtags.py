@@ -13,60 +13,23 @@
 #   albums in the correct order (chronologically, not alphabetically).
 
 # This is the list of tags the mutagen EasyID3 class can handle:
-# album
-# albumartistsort
-# albumsort
-# arranger
-# artist
-# artistsort
-# asin
-# author
-# barcode
-# bpm
-# compilation
-# composer
-# composersort
-# conductor
-# copyright
-# date
-# discnumber
-# discsubtitle
-# encodedby
-# genre
-# isrc
-# length
-# lyricist
-# media
-# mood
-# musicbrainz_albumartistid
-# musicbrainz_albumid
-# musicbrainz_albumstatus
-# musicbrainz_albumtype
-# musicbrainz_artistid
-# musicbrainz_discid
-# musicbrainz_trackid
-# musicbrainz_trmid
-# musicip_fingerprint
-# musicip_puid
-# organization
-# performer
-# performer:*
-# releasecountry
-# replaygain_*_gain
-# replaygain_*_peak
-# title
-# titlesort
-# tracknumber
-# version
-# website
+# album albumartistsort albumsort arranger artist artistsort asin author barcode
+# bpm compilation composer composersort conductor copyright date discnumber
+# discsubtitle encodedby genre isrc length lyricist media mood
+# musicbrainz_albumartistid musicbrainz_albumid musicbrainz_albumstatus
+# musicbrainz_albumtype musicbrainz_artistid musicbrainz_discid
+# musicbrainz_trackid musicbrainz_trmid musicip_fingerprint musicip_puid
+# organization performer performer:* releasecountry replaygain_*_gain
+# replaygain_*_peak title titlesort tracknumber version website 
 
+import datetime
 import os
 import tty
 import sys
 import termios
+import time
 import argparse
-import mutagen.mp3
-import mutagen.easyid3
+from mutagen.id3 import ID3, TPE1, TALB, TDRC, TRCK, TIT2
 
 VERSION = 19
 NO_MP3_FILES = "I cannae find any mp3 files in the current directory!"
@@ -89,11 +52,28 @@ def ismp3(filename):
     _, ext = os.path.splitext(filename)
     return ext == ".mp3"
 
-def main(options):
-    #print "version:", VERSION
-    cwd    = unicode( os.getcwd(), "utf-8" )
-    path   = cwd.split("/")
+def tag(filename, artist, album, year):
+    basename, ext = os.path.splitext(filename)
+    track = basename[:2]
+    title = basename[3:]
+    t0 = datetime.datetime.now()
+    try:
+        mutagen_tag = ID3()
+        mutagen_tag.add(TPE1(encoding=3, text=artist))
+        mutagen_tag.add(TALB(encoding=3, text=album))
+        mutagen_tag.add(TDRC(encoding=3, text=year))
+        mutagen_tag.add(TRCK(encoding=3, text=track))
+        mutagen_tag.add(TIT2(encoding=3, text=title))
+        mutagen_tag.save(filename)
+    except Exception, e:
+        print MUTAGEN_ERR, filename, ":", e
+    t1 = datetime.datetime.now()
+    print track, str(t1 - t0)
 
+def process_file(filename, artist, album, year):
+    tag(filename, artist, album, year)
+
+def get_params(options, path):
     if options.multicd:
         if options.categorized:
             artist = path[-4]
@@ -108,6 +88,14 @@ def main(options):
             artist = path[-2]
         album  = path[-1][5:]
         year   = path[-1][:4]
+    return (artist, album, year)
+
+def main(options):
+    #print "version:", VERSION
+    cwd    = unicode( os.getcwd(), "utf-8" )
+    path   = cwd.split("/")
+
+    artist, album, year = get_params(options, path)
 
     files = filter(ismp3, os.listdir(cwd))
     files.sort()
@@ -118,38 +106,19 @@ def main(options):
     print "artist: ", artist
     print "album:  ", album
     print "year:   ", year
-    print "files:"
+    print "track: title:"
     for filename in files:
         basename, ext = os.path.splitext(filename)
         track    = basename[:2]
         name     = basename[3:]
-        print "  ", track, name
+        print "   ", track, name
     print "-" * 80
-
     print "ok? (y/n)"
     ch = getch()
     if ch == 'y':
         print YES_MSG
         for filename in files:
-            basename, ext = os.path.splitext(filename)
-            track = basename[:2]
-            title = basename[3:]
-            try:
-                mutagen_tag = mutagen.mp3.MP3(filename)
-                mutagen_tag.delete()
-            except:
-                pass
-
-            try:
-                mutagen_tag = mutagen.mp3.MP3(filename, ID3=mutagen.easyid3.EasyID3)
-                mutagen_tag["artist"]      = artist
-                mutagen_tag["album"]       = album
-                mutagen_tag["date"]        = year
-                mutagen_tag["tracknumber"] = track
-                mutagen_tag["title"]       = title
-                mutagen_tag.save()
-            except:
-                print MUTAGEN_ERR, filename
+            process_file(filename, artist, album, year)
         print
     elif ch == 'n':
         print NO_MSG
