@@ -39,11 +39,11 @@ typedef graph_t* graph_p;
 
 uint32_t** matrix_uint32_t(uint32_t n, uint32_t m, uint32_t val) {
   uint32_t** t = malloc(sizeof(uint32_t*) * n);
-  for (int i = 0; i < n; i++) {
+  for (uint32_t i = 0; i < n; i++) {
     t[i] = malloc(sizeof(uint32_t) * m);
   }
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < m; j++) {
+  for (uint32_t i = 0; i < n; i++) {
+    for (uint32_t j = 0; j < m; j++) {
       t[i][j] = val;
     }
   }
@@ -62,8 +62,8 @@ graph_p graph_copy(graph_p g) {
   graph_p ng = NULL;
   ng = graph_init(g->v);
   ng->e = g->e;
-  for (int i = 0; i < g->v; i++) {
-    for (int j = 0; j < g->v; j++) {
+  for (uint32_t i = 0; i < g->v; i++) {
+    for (uint32_t j = 0; j < g->v; j++) {
       ng->adj[i][j] = g->adj[i][j];
     }
   }
@@ -73,7 +73,7 @@ graph_p graph_copy(graph_p g) {
 graph_p graph_random(uint32_t v, uint32_t e) {
   graph_p g = graph_init(v);
   return g;
-  for (int i = 0; i < e; i++) {
+  for (uint32_t i = 0; i < e; i++) {
     edge_t e;
     e.v = rand() % v;
     e.w = rand() % v;
@@ -82,7 +82,7 @@ graph_p graph_random(uint32_t v, uint32_t e) {
 }
 
 void graph_destroy(graph_p g) {
-  for (int i = 0; i < g->v; i++) {
+  for (uint32_t i = 0; i < g->v; i++) {
     free(g->adj[i]);
   }
   free(g->adj);
@@ -106,8 +106,8 @@ void graph_remove_edge(graph_p g, edge_t e) {
 uint32_t graph_edges(graph_p g, edge_t es[]) {
   uint32_t i = 0;
   edge_t e;
-  for (int v = 0; v < g->v; v++) {
-    for (int w = v; w < g->v; w++) {
+  for (uint32_t v = 0; v < g->v; v++) {
+    for (uint32_t w = v; w < g->v; w++) {
       if (g->adj[v][w] == 1) {
         e.v = v;
         e.w = w;
@@ -119,8 +119,8 @@ uint32_t graph_edges(graph_p g, edge_t es[]) {
 }
 
 void graph_print(graph_p g) {
-  for (int i = 0; i < g->v; i++) {
-    for (int j = 0; j < g->v; j++) {
+  for (uint32_t i = 0; i < g->v; i++) {
+    for (uint32_t j = 0; j < g->v; j++) {
       printf("%d ", g->adj[i][j]);
     }
     printf("\n");
