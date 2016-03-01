@@ -1,0 +1,72 @@
+HEAPSORT
+
+like merge sort but unlike insertion sort, running time is O(n lg n)
+like insertion sort but unlike merge sort, sorts in place
+
+a heap data structure is an array object that can be viewed as a complete binary tree
+each node if the tree corresponds to an element of the array  that stored the value in the node
+the tree is completely filled on all levels except possible the lowest, which is filled from the left up to a point. 
+
+an array A that represents a heap is an object with two attributes: 
+    length(A)    the number of element sin the array 
+    heap-size(A) the number of elements in the heap sorted within array A
+although A[1..length(A)] may contain valid numbers, no element past A[heap-size(A)] is an element of the heap, where heap-size(A) <= length(A)
+
+the root of the tree is A[1] and given the index i of a node, the indices of its parent PARENT(i), left child LEFT(i) and right child RIGHT(i) can be computed simply:
+    PARENT(i) return floor(i / 2)
+    LEFT(i)   return floor(2 * i)
+    RIGHT(i)  return floor(2 * i + 1)
+
+heaps also satisfy the heap property: for every node i other than the root A[parent(i)] >= A[i]
+the largest element is stored at the root
+the subtrees contain smaller values than the node itself
+
+the height of a node is is the number of edges on the longest simple downward path from the node to a leaf
+the height of a tree is the height of the root
+
+since a heap of n elements is based on a complete binary tree, it's height is Theta(lg n)
+
+the basic operations on heaps run in time at most proportional to the height of the tree
+
+the HEAPIFY                 O(lg n)   key to maintaining the heap property
+the BUILD-HEAP              O(n)      produces a heap from an unordered input array
+the HEAPSORT                O(n lg n) sorts an array in place
+the EXTRACT-MAX and INSERT  O(lg n)   allow the heap data structure to be used as a priority queue
+
+#------------------------------------------------------------------------------#
+Maintaining the heap property:
+
+HEAPIFY
+    inputs: an array A and an index i into the array
+    when HEAPIFY is called, it is assumed that the binary trees rooted at LEFT(i) and RIGHT(i) are heaps, but that A[i] may be smaller than its children, violating the heap property
+    the function of HEAPIFY is to let the value at A[i] sift down in the heap so that the subtree rooted at index i becomes a heap
+    
+    HEAPIFY(A, i)
+        l = LEFT(i)
+        r = RIGHT(i)
+        if (l <= heap-size(A) and A[l] > A[i])
+            then largest = l
+            else largest = i
+        if (r <= heap-size(A) and A[r] > A[largest])
+            then largest = r
+        if (largest != i)
+            then exchange(A[i], A[largest])
+                 HEAPIFY(A, largest)
+    
+    at each step the largest of the elements A[i], A[RIGHT(i)], A[LEFT(i)] is determined and its index stored in largest
+    if A[i] is largest, then the subtree rooted at nodei is a heap and the procedure terminates
+    otherwise one of the two children is swapped with A[i] which causes node i and its children to satisfy the heap property
+    however, the node largest now has the original value A[i] and thus the subtree rooted at largest may violate the heap property so HEAPIFY is called recursively on that subtree
+    
+    the running time of HEAPIFY on a subtree of size n rooted at a given node i is the Theta(1) time to fix the relationship between the three nodes plus the time to run HEAPIFY on a subtree rooted at one the of the children of node i
+    the children's subtrees each have size at most 2n / 3 (the worst case occurs when the last row of the tree is exactly half full, and the runnin time of HEAPIFY can be described by the recurrence 
+    
+    T(n) <= T(2n / 3) + Theta(1)
+    
+    the solution to this recurrence by way of the Master Theorem is T(n) = O(lg n)
+    alternatively we can characterize the running time of HEAPIFY on a node of height h as O(h)
+
+#------------------------------------------------------------------------------#
+Building a heap
+
+
