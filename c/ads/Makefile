@@ -48,11 +48,16 @@ element_test_build:
 element_test_run:
 	@${TEST_BUILD_DIR}/test_element
 
-# Simply Linked List
-# Doubly Linked List
-# Array Stack
-# List Stack
-# Array Queue
-# List Queue
-# Undirected Graph
-# Directed Graph
+# Dynamic Array
+# Stack (Array)
+# Queue (Array)
+#
+# List (Simply Linked)
+# List (Doubly Linked)
+# Stack (List)
+# Queue (List)
+#
+# Graph (Undirected)
+# Graph (Directed)
+#
+# Disjoint Sets
