@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef uint32_t data_t;
+typedef int data_t;
 
 typedef struct node_s {
   data_t data;
@@ -20,27 +20,68 @@ typedef struct list_s {
 typedef node_t* link_t;
 
 /* Creators & Destroyers */
+
+/*
+ */
 list_t* linked_list_new     ();
+
+/*
+ */
 void    linked_list_init    (list_t* l);
+
+/*
+ */
 void    linked_list_destroy (list_t* l);
 
 /* Getters */
+
+/*
+ */
 size_t linked_list_count    (list_t* l);
+
+/*
+ */
 link_t linked_list_first    (list_t* l);
+
+/*
+ */
 link_t linked_list_last     (list_t* l);
+
+/*
+ */
 link_t linked_list_index    (list_t* l, size_t i);
+
+/*
+ */
 link_t linked_list_next     (link_t l);
+
+/*
+ */
 int    linked_list_item     (link_t l, data_t* d);
-bool   linked_list_empty    (list_t* l);
 
 /* Setters */
+
+/*
+ */
 void   linked_list_push     (list_t* l, data_t d);
+
+/*
+ */
 int    linked_list_pop      (list_t* l, data_t* d);
 
+
+/*
+ */
 int    linked_list_insert   (list_t* l, link_t k, data_t d);
+
+/*
+ */
 link_t linked_list_delete   (list_t* l, link_t k);
 
 /* Misc */
+
+/*
+ */
 void   linked_list_print    (list_t* l);
 
 #endif
