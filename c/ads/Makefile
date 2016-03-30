@@ -1,7 +1,7 @@
 .PHONY: all objects tests tests_build tests_run tests_announce clean
 
 CC=clang
-CCFLAGS=-std=c11 -pedantic -Wall -Wextra -Wpedantic -Werror -Wformat
+CCFLAGS=-std=c11 -pedantic -pedantic-errors -Wall -Wextra -Wpedantic -Werror -Wformat -g
 SRC_DIR=./src
 INC_DIR=./src
 TEST_DIR=./src/tests
