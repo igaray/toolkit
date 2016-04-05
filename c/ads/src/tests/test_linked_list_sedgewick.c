@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "linked_list_simple.h"
+#include "linked_list_sedgewick.h"
 
 int main()
 {
+  linked_list_init(32);
   list_t l = NULL;
   linked_list_print(l);
 
@@ -18,6 +19,6 @@ int main()
   l = linked_list_delete(l);
   linked_list_print(l);
 
-  printf("linked_list_simple: OK\n");
+  printf("linked_list_sedgewick: OK\n");
   return EXIT_SUCCESS;
 }
