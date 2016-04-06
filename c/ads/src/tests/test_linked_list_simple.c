@@ -5,9 +5,11 @@
 int main()
 {
   list_t l = NULL;
+
+  linked_list_print(l);
+  l = linked_list_new(0);
   linked_list_print(l);
 
-  l = linked_list_new(0);
   for (int i = 5; i > 0; i--)
   {
     list_t t = linked_list_new(i);
@@ -15,7 +17,10 @@ int main()
   }
   linked_list_print(l);
 
-  l = linked_list_delete(l);
+  do {
+    linked_list_print(l);
+    l = linked_list_delete(l);
+  } while (l != NULL);
   linked_list_print(l);
 
   printf("linked_list_simple: OK\n");

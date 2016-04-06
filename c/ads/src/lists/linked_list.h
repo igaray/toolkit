@@ -8,18 +8,18 @@
 
 typedef int data_t;
 
+typedef struct node_s* link_t;
+
 typedef struct node_s {
   data_t data;
-  struct node_s *next;
+  link_t next;
 } node_t;
 
 typedef struct list_s {
-  node_t *first;
-  node_t *last;
+  link_t first;
+  link_t last;
   size_t count;
 } list_t;
-
-typedef node_t *link_t;
 
 /* Creators & Destroyers */
 

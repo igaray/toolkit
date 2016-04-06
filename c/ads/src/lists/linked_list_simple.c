@@ -8,27 +8,46 @@ typedef struct node_s {
 
 list_t linked_list_new(data_t d) {
   list_t x = malloc(sizeof(node_t));
-  x->data = d;
-  x->next = NULL;
+  if (x != NULL) {
+    x->data = d;
+    x->next = NULL;
+  }
+  else {
+    return NULL;
+  }
   return x;
 }
 
-void linked_list_free(list_t x) { free(x); }
+void linked_list_free(list_t l) { free(l); }
 
 void linked_list_insert(list_t l1, list_t l2) {
-  l2->next = l1->next;
-  l1->next = l2;
+  if ((l1 != NULL) && (l2 != NULL)) {
+    l2->next = l1->next;
+    l1->next = l2;
+  }
 }
 
 list_t linked_list_delete(list_t l) {
-  list_t t = l->next;
-  l->next = t->next;
+  list_t t = NULL;
+  if (l != NULL) {
+    t = l->next;
+    if (t != NULL) {
+      l->next = t->next;
+    }
+    free(l);
+  }
   return t;
 }
 
-list_t linked_list_next(list_t l) { return l->next; }
+list_t linked_list_next(list_t l) {
+  if (l != NULL) { return l->next; }
+  else {return NULL; }
+}
 
-int linked_list_item(list_t l) { return l->data; }
+int linked_list_item(list_t l) {
+  if (l != NULL) { return l->data; }
+  else { return NULL; }
+}
 
 void linked_list_print(list_t l) {
   printf("l: [");

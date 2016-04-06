@@ -14,9 +14,11 @@ int main()
     list_t t = linked_list_new(i);
     linked_list_insert(l, t);
   }
-  linked_list_print(l);
 
-  l = linked_list_delete(l);
+  linked_list_print(l);
+  do {
+    l = linked_list_delete(l);
+  } while (l != NULL);
   linked_list_print(l);
 
   printf("linked_list_sedgewick: OK\n");
