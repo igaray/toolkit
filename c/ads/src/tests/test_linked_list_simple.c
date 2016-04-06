@@ -15,7 +15,6 @@ int main()
     list_t t = linked_list_new(i);
     linked_list_insert(l, t);
   }
-  linked_list_print(l);
 
   do {
     linked_list_print(l);

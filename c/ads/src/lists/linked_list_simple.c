@@ -46,7 +46,7 @@ list_t linked_list_next(list_t l) {
 
 int linked_list_item(list_t l) {
   if (l != NULL) { return l->data; }
-  else { return NULL; }
+  else { return 0; }
 }
 
 void linked_list_print(list_t l) {
