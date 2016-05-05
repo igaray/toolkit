@@ -53,12 +53,12 @@ void linked_list_free(linked_list_t* list, unsigned int options) {
     }
 
     position_t temp, position = *list;
-    
-    while (position != NULL) 
+
+    while (position != NULL)
     {
         temp     = position;
         position = position->next;
-        if (temp != NULL) 
+        if (temp != NULL)
         {
             free(temp);
         }
@@ -69,11 +69,11 @@ void linked_list_free(linked_list_t* list, unsigned int options) {
 /**************************************************************************************************/
 position_t linked_list_first(list_t list)
 {
-    if (*list != NULL) 
+    if (*list != NULL)
     {
         return (*list)->data;
     }
-    else 
+    else
     {
         return NULL;
     }
@@ -124,16 +124,16 @@ element_t linked_list_geti(list_t list, unsigned int index);
     unsigned int i = 0;
     position_t position = *list;
 
-    while ((position != NULL) && (i < index)) 
+    while ((position != NULL) && (i < index))
     {
         position = position->next;
         i++;
     }
-    if (position != NULL) 
+    if (position != NULL)
     {
         return position->data;
     }
-    else 
+    else
     {
         /* This happens when index is greater than the amount of elements int the list. */
         /* In other words, an out of bounds access. */
@@ -160,7 +160,7 @@ unsigned int linked_list_length(list_t list);
     unsigned int length = 0;
     position_t position = *list;
 
-    while (position != NULL) 
+    while (position != NULL)
     {
         length++;
         position = position->next;
@@ -204,15 +204,15 @@ void linked_list_insert_last(list_t list, element_t element)
 
     node->data = element;
     node->next = NULL;
-    if (position != NULL) 
+    if (position != NULL)
     {
-        while (position->next != NULL) 
+        while (position->next != NULL)
         {
             position = position->next;
         }
         position->next = node;
     }
-    else 
+    else
     {
         /* Empty list. */
         *list = node;

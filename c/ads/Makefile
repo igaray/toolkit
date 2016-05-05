@@ -1,7 +1,7 @@
 .PHONY: all objects tests tests_build tests_run tests_announce clean
 
 CC=clang
-CCFLAGS=-std=c11 -pedantic -Wall -Wextra -Wpedantic -Werror -Wformat
+CCFLAGS=-std=c11 -pedantic -pedantic-errors -Wall -Wextra -Wpedantic -Werror -Wformat -g
 SRC_DIR=./src
 INC_DIR=./src
 TEST_DIR=./src/tests
@@ -13,19 +13,22 @@ all: objects
 objects: ${BUILD_DIR} \
 	${BUILD_DIR}/element.o \
 	${BUILD_DIR}/linked_list.o \
-	${BUILD_DIR}/linked_list_simple.o
+	${BUILD_DIR}/linked_list_simple.o \
+	${BUILD_DIR}/linked_list_sedgewick.o
 
 tests: objects tests_build tests_run
 
 tests_build: ${TEST_BUILD_DIR} \
 	test_build_element \
 	test_build_linked_list \
-	test_build_linked_list_simple
+	test_build_linked_list_simple \
+	test_build_linked_list_sedgewick
 
 tests_run: tests_announce \
 	test_run_element \
 	test_run_linked_list \
-	test_run_linked_list_simple
+	test_run_linked_list_simple \
+	test_run_linked_list_sedgewick
 
 tests_announce:
 	@echo
@@ -56,10 +59,10 @@ test_run_element:
 
 # Linked List
 ${BUILD_DIR}/linked_list.o:
-	${CC} ${CCFLAGS} -c ${SRC_DIR}/linked_list.c -o ${BUILD_DIR}/linked_list.o
+	${CC} ${CCFLAGS} -c ${SRC_DIR}/lists/linked_list.c -o ${BUILD_DIR}/linked_list.o
 
 test_build_linked_list:
-	${CC} ${CCFLAGS} -I ${INC_DIR} -c ${TEST_DIR}/test_linked_list.c -o ${TEST_BUILD_DIR}/test_linked_list.o
+	${CC} ${CCFLAGS} -I ${INC_DIR}/lists -c ${TEST_DIR}/test_linked_list.c -o ${TEST_BUILD_DIR}/test_linked_list.o
 	${CC} ${CCFLAGS} ${BUILD_DIR}/linked_list.o ${TEST_BUILD_DIR}/test_linked_list.o -o ${TEST_BUILD_DIR}/test_linked_list
 
 test_run_linked_list:
@@ -67,14 +70,25 @@ test_run_linked_list:
 
 # Linked List Simple
 ${BUILD_DIR}/linked_list_simple.o:
-	${CC} ${CCFLAGS} -c ${SRC_DIR}/linked_list_simple.c -o ${BUILD_DIR}/linked_list_simple.o
+	${CC} ${CCFLAGS} -c ${SRC_DIR}/lists/linked_list_simple.c -o ${BUILD_DIR}/linked_list_simple.o
 
 test_build_linked_list_simple:
-	${CC} ${CCFLAGS} -I ${INC_DIR} -c ${TEST_DIR}/test_linked_list_simple.c -o ${TEST_BUILD_DIR}/test_linked_list_simple.o
+	${CC} ${CCFLAGS} -I ${INC_DIR}/lists -c ${TEST_DIR}/test_linked_list_simple.c -o ${TEST_BUILD_DIR}/test_linked_list_simple.o
 	${CC} ${CCFLAGS} ${BUILD_DIR}/linked_list_simple.o ${TEST_BUILD_DIR}/test_linked_list_simple.o -o ${TEST_BUILD_DIR}/test_linked_list_simple
 
 test_run_linked_list_simple:
 	@${TEST_BUILD_DIR}/test_linked_list_simple
+
+# Linked List Sedgewick
+${BUILD_DIR}/linked_list_sedgewick.o:
+	${CC} ${CCFLAGS} -c ${SRC_DIR}/lists/linked_list_sedgewick.c -o ${BUILD_DIR}/linked_list_sedgewick.o
+
+test_build_linked_list_sedgewick:
+	${CC} ${CCFLAGS} -I ${INC_DIR}/lists -c ${TEST_DIR}/test_linked_list_sedgewick.c -o ${TEST_BUILD_DIR}/test_linked_list_sedgewick.o
+	${CC} ${CCFLAGS} ${BUILD_DIR}/linked_list_sedgewick.o ${TEST_BUILD_DIR}/test_linked_list_sedgewick.o -o ${TEST_BUILD_DIR}/test_linked_list_sedgewick
+
+test_run_linked_list_sedgewick:
+	@${TEST_BUILD_DIR}/test_linked_list_sedgewick
 
 # TODO
 # Dynamic Array
