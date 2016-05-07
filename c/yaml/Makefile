@@ -4,8 +4,8 @@
 
 all:
 	mkdir -p build
-	clang -I./deps/libyaml/include -o build/main.o -c src/main.c 
-	clang -o build/yamltest build/main.o ./deps/libyaml/src/.libs/libyaml.a
+	clang -I./deps/libyaml/include -g -o build/main.o -c src/main.c
+	clang -g -o build/yamltest build/main.o ./deps/libyaml/src/.libs/libyaml.a
 
 deps:
 	mkdir deps
