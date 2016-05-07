@@ -103,9 +103,10 @@ int load_documents(char *config_file_path) {
       done = 1;
     } else {
       print_document(&document, root_node);
-      yaml_document_delete(&document);
     }
+    yaml_document_delete(&document);
   }
+
   yaml_parser_delete(&parser);
   fclose(config_file);
   return rv;
