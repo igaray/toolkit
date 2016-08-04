@@ -1,4 +1,10 @@
 #!/usr/bin/python
+# Requires Python 3
+# Uso:
+# $ chmod +x partidos.py
+# $ ./partidos.py
+# Union Masoquista por la Castidad
+# $
 import random
 
 prefix = [
