@@ -13,7 +13,7 @@ def usage():
     print(USAGE)
 
 def vowel(c):
-    return c in "aeiouy"
+    return c in "aeiou"
 
 def consonant(c):
     return not vowel(c)
