@@ -3,9 +3,10 @@ import sys
 
 USAGE = """
 $ ./rspns_rply v Hello, tesseractee, I've missed your interdimensional presence.
+eo eeaee e ie you ieieioa eee
 
 $ ./rspns_rply c Hello, tesseractee, I've missed your interdimensional presence.
-
+Hll, tssrct, I'v mssd r ntrdmnsnl prsnc.
 """
 
 def usage():
@@ -21,7 +22,7 @@ def v(s):
     return " ".join(["".join([c for c in w if vowel(c)]) for w in s])
 
 def c(s):
-    return " ".join(["".join([c for c in s if consonant(c)]) for w in s])
+    return " ".join(["".join([c for c in w if consonant(c)]) for w in s])
 
 def main(argv):
     if len(argv) < 3:
