@@ -1,7 +1,8 @@
-import sys
+import datetime
 import os
 import pprint
 import string
+import sys
 
 #-------------------------------------------------------------------------------
 class Entry:
@@ -60,15 +61,14 @@ def new_subtask(title, duration, current):
 
 def parse_subtask(entry):
     title = entry[4][2:]
-    duration = 1
-    return (title, duration)
+    return title
 
 #-------------------------------------------------------------------------------
 class Task:
     pass
 
-def new_task(title):
-    return {"task": title, "subtasks": []}
+def new_task(title, duration, current):
+    return {"goal": current["goal"], "project": current["project"], "subproject": current["subproject"], "task": title, "subtasks": [], "duration": duration}
 
 def parse_task(entry):
     title = entry[3][2:]
@@ -122,10 +122,7 @@ def get_task(current, todo):
 
 def get_subproject(current, todo):
     project = get_project(current, todo)
-    if current["subproject"] == None:
-        subprojects = [x for x in project["subprojects"] if x["subproject"] == "default"]
-    else:
-        subprojects = [x for x in project["subprojects"] if x["subproject"] == current["subproject"]]
+    subprojects = [x for x in project["subprojects"] if x["subproject"] == current["subproject"]]
     return subprojects[0]
 
 def get_project(current, todo):
@@ -138,16 +135,25 @@ def get_goal(current, todo):
     return goals[0]
 
 def add_subtask(current, todo, entry):
-    title, duration = parse_subtask(entry)
+    title = parse_subtask(entry)
     metadata = parse_metadata(entry)
     task = get_task(current, todo)
+    if "duration" in metadata:
+        duration = metadata["duration"]
+    else:
+        duration = 1
     subtask = new_subtask(title, duration, current)
     task["subtasks"].append(subtask)
 
 def add_task(current, todo, entry):
     title = parse_task(entry)
+    metadata = parse_metadata(entry)
+    if "duration" in metadata:
+        duration = metadata["duration"]
+    else:
+        duration = 1
     subproject = get_subproject(current, todo)
-    task = new_task(title)
+    task = new_task(title, duration, current)
     subproject["tasks"].append(task)
     current["task"] = title
 
@@ -165,7 +171,7 @@ def add_project(current, todo, entry):
     project = new_project(title, active)
     goal["projects"].append(project)
     current["project"] = title
-    current["subproject"] = None
+    current["subproject"] = "default"
     current["task"] = None
 
 def add_goal(current, todo, entry):
@@ -174,7 +180,7 @@ def add_goal(current, todo, entry):
     todo.append(goal)
     current["goal"] = title
     current["project"] = None
-    current["subproject"] = None
+    current["subproject"] = "default"
     current["task"] = None
 
 def parse_todo(data):
@@ -183,7 +189,7 @@ def parse_todo(data):
     current = {}
     current["goal"] = None
     current["project"] = None
-    current["subproject"] = None
+    current["subproject"] = "default"
     current["task"] = None
     for entry in data:
         if is_routine(entry):
@@ -208,16 +214,18 @@ def parse_todo(data):
 class Routine:
     pass
 
-def new_slot(day, start, duration, todo):
-    return {"day": day, "start": start, "duration": int(duration), "todo": todo}
+def new_slot(day, start, category):
+    return {"day": day, "start": start, "category": category}
 
-def parse_slot(entry):
-    return (entry[1], entry[2], entry[3])
-
-def add_slot(day, routine, entry):
-    start, duration, todo = parse_slot(entry)
-    slot = new_slot(day, start, duration, todo)
-    routine.append(slot)
+def add_slots(day, routine, entry):
+    delta = datetime.timedelta(minutes=30)
+    start = [int(x) for x in entry[1].split(':')]
+    duration = int(entry[2])
+    category = entry[3]
+    for i in range(duration):
+        start_time = (datetime.datetime.today().replace(hour=start[0], minute=start[1], second=0, microsecond=0) + delta * i).strftime("%H:%M")
+        slot = new_slot(day, start_time, category)
+        routine.append(slot)
 
 def parse_routine(data):
     entries = 0
@@ -228,15 +236,24 @@ def parse_routine(data):
             break
         elif is_day(entry):
             current_day = entry[0]
-        add_slot(current_day, routine, entry)
+        add_slots(current_day, routine, entry)
     return (routine, data)
 
 #-------------------------------------------------------------------------------
 class Schedule:
     pass
 
-def get_subtasks(tasks):
-    pass
+def get_tasks(todo):
+    tasks = []
+    for goal in todo:
+        for project in goal["projects"]:
+            for subproject in project["subprojects"]:
+                for task in subproject["tasks"]:
+                    if task["subtasks"] != []:
+                        tasks.extend(task["subtasks"])
+                    else:
+                        tasks.append(task)
+    return tasks
 
 def active_subprojects(project):
     project["subprojects"] = [subproject for subproject in project["subprojects"] if subproject["active"] == True]
@@ -250,29 +267,64 @@ def active_goals(todo):
     return [active_projects(goal) for goal in todo if goal["active"] == True]
 
 def schedule_week(tasks, routine):
-    schedule = None
-
+    schedule = routine
     goals = active_goals(tasks)
-    subtasklist = get_subtasks(goals)
-    schedule = subtasklist
+    tasklist = get_tasks(goals)
+
+    # shift routine to start on today
+    today = datetime.datetime.isoweekday(datetime.datetime.today())
 
     for slot in routine:
-        # assign task to slot
-        pass
+        for task in tasklist:
+            pp = pprint.PrettyPrinter(indent=2, width=280)
+            if (slot["category"] == task["goal"]) or (slot["category"] == task["project"]) or (slot["category"] == task["subproject"]):
+                slot["item"] = task
+                if task["duration"] == 1:
+                    tasklist.remove(task)
+                else:
+                    task["duration"] -= 1
+                break
     return schedule
 
 #-------------------------------------------------------------------------------
 def output(data, todo, routine, schedule):
-    pp = pprint.PrettyPrinter(indent=2, width=220)
-    print("TODO:")
-    pp.pprint(todo)
+    pp = pprint.PrettyPrinter(indent=2, width=280)
+    #print("TODO:")
+    #pp.pprint(todo)
     #print("ROUTINE:")
     #pp.pprint(routine)
-    print("SCHEDULE:")
-    pp.pprint(schedule)
+    #print("SCHEDULE:")
+    #pp.pprint(schedule)
+
+    maxday = max([len("day")] + [len(slot["day"]) for slot in schedule])
+    maxgoal = max([len("goal")] + [len(slot["item"]["goal"]) for slot in schedule if "item" in slot])
+    maxproject = max([len("project")] + [len(slot["item"]["project"]) for slot in schedule if "item" in slot])
+    maxsubproject = max([len("subproject")] + [len(slot["item"]["subproject"]) for slot in schedule if "item" in slot])
+
+    strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | {}"
+    print(strfmt.format("day", " time", "goal", "project", "subproject", "task"))
+    for slot in schedule:
+        day = slot["day"]
+        start = slot["start"]
+        if "item" in slot:
+            item = slot["item"]
+            goal = item["goal"]
+            project = item["project"]
+            subproject = item["subproject"]
+            task = item["task"]
+            strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | "
+            if subproject == "default":
+                subproject = ""
+            if "subtask" in item:
+                strfmt += "{}:{}"
+                subtask = item["subtask"]
+                print(strfmt.format(day, start, goal, project, subproject, task, subtask))
+            else:
+                strfmt += "{}"
+                print(strfmt.format(day, start, goal, project, subproject, task))
 
 def read():
-    with open("todo.txt", "r") as todofile:
+    with open("/Users/igaray/Dropbox/textfiles/private/todo.txt", "r") as todofile:
         filecontents = []
         for line in todofile:
             filecontents.append([field.strip(" <>") for field in line[:-1].split("|")])
