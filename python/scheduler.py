@@ -6,337 +6,443 @@ import sys
 
 #-------------------------------------------------------------------------------
 class Entry:
-    pass
 
-def is_goal(entry):
-    return entry[0] != ''
+    def __init__(self, line):
+        self.fields = [field.strip(" <>") for field in line[:-1].split("|")]
+        self.goal = ''
+        self.project = ''
+        self.subproject = ''
+        self.task = ''
+        self.subtask = ''
+        self.metadata_raw = ''
+        self.metadata = {}
 
-def is_project(entry):
-    return entry[1] != ''
+        if len(self.fields) == 6:
+            for field in self.fields:
+                if len(field) > 2 and (field[:2] in ['+ ', '- ']):
+                    if field[0] == '+':
+                        self.metadata["active"] = True
+                    else:
+                        self.metadata["active"] = False
+                    field = field[2:]
+                    break
 
-def is_subproject(entry):
-    return entry[2] != ''
+            self.goal = self.fields[0][2:]
+            self.project = self.fields[1][2:]
+            self.subproject = self.fields[2][2:]
+            self.task = self.fields[3][2:]
+            self.subtask = self.fields[4][2:]
 
-def is_task(entry):
-    return entry[3] != ''
+            self.metadata_raw = self.fields[5]
+            if self.metadata_raw != '': 
+                metadata_fields = [field.split(':') for field in self.metadata_raw.split(',')]
+                for mdfield in metadata_fields:
+                    if len(mdfield)  == 2:
+                        self.metadata[mdfield[0]] = mdfield[1]
 
-def is_subtask(entry):
-    return entry[4] != ''
+            if "duration" in self.metadata:
+                self.metadata["duration"] = int(self.metadata["duration"])
+            else:
+                self.metadata["duration"] = 1
 
-def is_empty(entry):
-    return (entry == []) or (entry == ['']) or (entry == ['', '', '', '', '', ''])
+    def __repr__(self):
+        d = {
+                "fields": self.fields,
+                "goal": self.goal,
+                "project": self.project,
+                "subproject": self.subproject,
+                "task": self.task,
+                "subtask": self.subtask,
+                "metadata": self.metadata
 
-def is_routine(entry):
-    return entry[0] == 'routine'
+            }
+        s = str(d)
+        return s
 
-def is_notes(entry):
-    return entry[0] == 'notes:'
+    def __str__(self):
+        return self.__repr__()
 
-def is_active(entry):
-    return entry[0] == '+'
+    def is_goal(self):
+        return self.goal != ''
 
-def is_day(entry):
-    day = entry[0]
-    return (day == 'monday') or (day == 'tuesday') or (day == 'wednesday') or (day == 'thursday') or (day == 'friday') or (day == 'saturday') or (day == 'sunday')
-#-------------------------------------------------------------------------------
-class Metadata:
-    pass
+    def is_project(self):
+        return self.project != ''
 
-def parse_metadata(entry):
-    metadata = {}
-    metadata_raw = entry[5]
-    metadata_fields = [ field.split(':') for field in metadata_raw.split(',')]
-    if metadata_raw != '': 
-        for field in metadata_fields:
-            metadata[field[0]] = field[1]
-        metadata["duration"] = int(metadata["duration"])
-    return metadata
+    def is_subproject(self):
+        return self.subproject != ''
+
+    def is_task(self):
+        return self.task != ''
+
+    def is_subtask(self):
+        return self.subtask != ''
+
+    def is_empty(self):
+        return (self.fields == []) or (self.fields == ['']) or (self.fields == ['', '', '', '', '', ''])
+
+    def is_header(self):
+        return self.fields[0] == 'goals'
+
+    def is_routine(self):
+        return self.fields[0] == 'routine'
+
+    def is_notes(self):
+        return self.fields[0] == 'notes:'
+
+    def is_day(self):
+        return self.fields[0] in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 #-------------------------------------------------------------------------------
 class Subtask:
-    pass
 
-def new_subtask(title, duration, current):
-    return {"goal": current["goal"], "project": current["project"], "subproject": current["subproject"], "task": current["task"], "subtask": title, "duration": duration}
+    def __init__(self, entry, goal, project, subproject, task):
+        self.name = entry.subtask
+        self.goal = goal
+        self.project = project
+        self.subproject = project
+        self.task = task
+        self.duration = entry.metadata["duration"]
 
-def parse_subtask(entry):
-    title = entry[4][2:]
-    return title
+    def __repr__(self):
+        d = {
+                "class": "subtask", 
+                "name": self.name, 
+                "goal": self.goal, 
+                "project": self.project, 
+                "subproject": self.subproject, 
+                "task": self.task, 
+                "duration": self.duration
+            }
+        s = str(d)
+        return s
+
+    def __str__(self):
+        return self.__repr__()
 
 #-------------------------------------------------------------------------------
 class Task:
-    pass
 
-def new_task(title, duration, current):
-    return {"goal": current["goal"], "project": current["project"], "subproject": current["subproject"], "task": title, "subtasks": [], "duration": duration}
+    def __init__(self, entry, goal, project, subproject):
+        self.name = entry.task
+        self.goal = goal
+        self.project = project
+        self.subproject = subproject
+        self.subtasks = []
+        self.duration = entry.metadata["duration"]
 
-def parse_task(entry):
-    title = entry[3][2:]
-    return title
+    def __repr__(self):
+        d = {
+                "class": "task",
+                "name": self.name, 
+                "goal": self.goal, 
+                "project": self.project, 
+                "subproject": self.subproject, 
+                "subtasks": self.subtasks, 
+                "duration": self.duration
+            }
+        s = str(d)
+        return s
+
+    def __str__(self):
+        return self.__repr__()
 
 #-------------------------------------------------------------------------------
 class Subproject:
-    pass
 
-def new_subproject(title, active):
-    return {"subproject": title, "active": active, "tasks": []}
+    def __init__(self, entry):
+        if entry.subproject == '':
+            self.name = "default"
+        else:
+            self.name = entry.subproject
+        self.active = entry.metadata["active"]
+        self.tasks = []
 
-def parse_subproject(entry):
-    title = entry[2][2:]
-    active = is_active(entry[2])
-    return (title, active)
+    def __repr__(self):
+        d = {
+                "class": "subproject",
+                "name": self.name, 
+                "active": self.active, 
+                "tasks": self.tasks
+            }
+        s = str(d)
+        return s
+
+    def __str__(self):
+        return self.__repr__()
 
 #-------------------------------------------------------------------------------
 class Project:
-    pass
 
-def new_project(title, active):
-    subproject = new_subproject("default", active)
-    return {"project": title, "active": active, "subprojects": [subproject]}
+    def __init__(self, entry):
+        self.name = entry.project
+        self.active = entry.metadata["active"]
+        self.subprojects = [Subproject(entry)]
 
-def parse_project(entry):
-    title = entry[1][2:]
-    active = is_active(entry[1])
-    return (title, active)
+    def __repr__(self):
+        d = {
+                "class": "project",
+                "name": self.name, 
+                "active": self.active, 
+                "subprojects": self.subprojects
+            }
+        s = str(d)
+        return s
+
+    def __str__(self):
+        return self.__repr__()
+
+    def active_subprojects(self):
+        self.subprojects = [subproject for subproject in self.subprojects if subproject.active == True]
+        return self
 
 #-------------------------------------------------------------------------------
 class Goal:
-    pass
 
-def new_goal(title, active):
-    return {"goal": title, "active": active, "projects": []}
+    def __init__(self, entry):
+        self.name = entry.goal
+        self.active = entry.metadata["active"]
+        self.projects = []
 
-def parse_goal(entry):
-    title = entry[0][2:]
-    active = is_active(entry[0])
-    return (title, active)
+    def __repr__(self):
+        d = {
+                "class": "goal",
+                "name": self.name, 
+                "active": self.active, 
+                "projects": self.projects
+            }
+        s = str(d)
+        return s
+
+    def __str__(self):
+        return self.__repr__()
+
+    def active_projects(self):
+        self.projects = [project.active_subprojects() for project in self.projects if project.active == True]
+        return self
 
 #-------------------------------------------------------------------------------
 class Todo:
-    pass
+    
+    def __init__(self, data):
+        self.todo = []
 
-def get_task(current, todo):
-    subproject = get_subproject(current, todo)
-    tasks = [x for x in subproject["tasks"] if x["task"] == current["task"]]
-    return tasks[0]
+        self.current = {}
+        self.current["goal"] = None
+        self.current["project"] = None
+        self.current["subproject"] = "default"
+        self.current["task"] = None
 
-def get_subproject(current, todo):
-    project = get_project(current, todo)
-    subprojects = [x for x in project["subprojects"] if x["subproject"] == current["subproject"]]
-    return subprojects[0]
+        entries = 0
+        for entry in data:
+            if entry.is_routine():
+                break
+            elif entry.is_header():
+                pass
+            elif entry.is_goal(): 
+                self.add_goal(entry)
+            elif entry.is_project(): 
+                self.add_project(entry)
+            elif entry.is_subproject(): 
+                self.add_subproject(entry)
+            elif entry.is_task(): 
+                self.add_task(entry)
+            elif entry.is_subtask(): 
+                self.add_subtask(entry)
+            else:
+                print("ERROR entry: {}".format(entry))
+                sys.exit(1)
+            entries += 1
+        data = data[entries:]
 
-def get_project(current, todo):
-    goal = get_goal(current, todo)
-    projects = [x for x in goal["projects"] if x["project"] == current["project"]]
-    return projects[0]
+    def __repr__(self):
+        return str(self.todo)
 
-def get_goal(current, todo):
-    goals = [x for x in todo if x["goal"] == current["goal"]]
-    return goals[0]
+    def __str__(self):
+        return str(self.todo)
 
-def add_subtask(current, todo, entry):
-    title = parse_subtask(entry)
-    metadata = parse_metadata(entry)
-    task = get_task(current, todo)
-    if "duration" in metadata:
-        duration = metadata["duration"]
-    else:
-        duration = 1
-    subtask = new_subtask(title, duration, current)
-    task["subtasks"].append(subtask)
+    def get_goal(self):
+        for goal in self.todo:
+            if goal.name == self.current["goal"]:
+                return goal
 
-def add_task(current, todo, entry):
-    title = parse_task(entry)
-    metadata = parse_metadata(entry)
-    if "duration" in metadata:
-        duration = metadata["duration"]
-    else:
-        duration = 1
-    subproject = get_subproject(current, todo)
-    task = new_task(title, duration, current)
-    subproject["tasks"].append(task)
-    current["task"] = title
+    def get_project(self):
+        goal = self.get_goal()
+        projects = [project for project in goal.projects if project.name == self.current["project"]]
+        return projects[0]
 
-def add_subproject(current, todo, entry):
-    title, active = parse_subproject(entry)
-    project = get_project(current, todo)
-    subproject = new_subproject(title, active)
-    project["subprojects"].append(subproject)
-    current["subproject"] = title
-    current["task"] = None
+    def get_subproject(self):
+        project = self.get_project()
+        subprojects = [subproject for subproject in project.subprojects if subproject.name == self.current["subproject"]]
+        return subprojects[0]
 
-def add_project(current, todo, entry):
-    title, active = parse_project(entry)
-    goal = get_goal(current, todo)
-    project = new_project(title, active)
-    goal["projects"].append(project)
-    current["project"] = title
-    current["subproject"] = "default"
-    current["task"] = None
+    def get_task(self):
+        subproject = self.get_subproject()
+        tasks = [task for task in subproject.tasks if task.name == self.current["task"]]
+        return tasks[0]
 
-def add_goal(current, todo, entry):
-    title, active = parse_goal(entry)
-    goal = new_goal(title, active)
-    todo.append(goal)
-    current["goal"] = title
-    current["project"] = None
-    current["subproject"] = "default"
-    current["task"] = None
+    def active_items(self):
+        return [goal.active_projects() for goal in self.todo if goal.active == True]
 
-def parse_todo(data):
-    entries = 0
-    todo = []
-    current = {}
-    current["goal"] = None
-    current["project"] = None
-    current["subproject"] = "default"
-    current["task"] = None
-    for entry in data:
-        if is_routine(entry):
-            break
-        elif is_goal(entry): 
-            add_goal(current, todo, entry)
-        elif is_project(entry): 
-            add_project(current, todo, entry)
-        elif is_subproject(entry): 
-            add_subproject(current, todo, entry)
-        elif is_task(entry): 
-            add_task(current, todo, entry)
-        elif is_subtask(entry): 
-            add_subtask(current, todo, entry)
-        else:
-            print("ERROR entry: {}".format(entry))
-        entries += 1
-    data = data[entries:]
-    return (todo, data)
+    def add_goal(self, entry):
+        goal = Goal(entry)
+        self.todo.append(goal)
+        self.current["goal"] = goal.name
+        self.current["project"] = None
+        self.current["subproject"] = "default"
+        self.current["task"] = None
+
+    def add_project(self, entry):
+        project = Project(entry)
+        goal = self.get_goal()
+        goal.projects.append(project)
+        self.current["project"] = project.name
+        self.current["subproject"] = "default"
+        self.current["task"] = None
+
+    def add_subproject(self, entry):
+        subproject = Subproject(entry)
+        project = self.get_project()
+        project.subprojects.append(subproject)
+        self.current["subproject"] = subproject.name
+        self.current["task"] = None
+
+    def add_task(self, entry):
+        task = Task(entry, self.current["goal"], self.current["project"], self.current["subproject"])
+        subproject = self.get_subproject()
+        subproject.tasks.append(task)
+        self.current["task"] = task.name
+
+    def add_subtask(self, entry):
+        subtask = Subtask(entry, self.current["goal"], self.current["project"], self.current["subproject"], self.current["task"])
+        task = self.get_task()
+        task.subtasks.append(subtask)
 
 #-------------------------------------------------------------------------------
-class Routine:
-    pass
-
 def new_slot(day, start, category):
     return {"day": day, "start": start, "category": category}
 
-def add_slots(day, routine, entry):
-    delta = datetime.timedelta(minutes=30)
-    start = [int(x) for x in entry[1].split(':')]
-    duration = int(entry[2])
-    category = entry[3]
-    for i in range(duration):
-        start_time = (datetime.datetime.today().replace(hour=start[0], minute=start[1], second=0, microsecond=0) + delta * i).strftime("%H:%M")
-        slot = new_slot(day, start_time, category)
-        routine.append(slot)
+class Routine:
 
-def parse_routine(data):
-    entries = 0
-    routine = []
-    current_day = None
-    for entry in data[1:]:
-        if is_notes(entry):
-            break
-        elif is_day(entry):
-            current_day = entry[0]
-        add_slots(current_day, routine, entry)
-    return (routine, data)
+    def __init__(self, data):
+        self.slots = []
+        entries = 0
+        current_day = None
+        skip = True
+        for entry in data:
+            if skip and entry.is_routine():
+                skip = False
+                continue
+            if not skip:
+                if entry.is_notes():
+                    break
+                elif entry.is_day():
+                    current_day = entry.fields[0]
+                self.add_slots(current_day, entry)
+
+    def add_slots(self, day, entry):
+        delta = datetime.timedelta(minutes=30)
+        start = [int(x) for x in entry.fields[1].split(':')]
+        duration = int(entry.fields[2])
+        category = entry.fields[3]
+        for i in range(duration):
+            start_time = (datetime.datetime.today().replace(hour=start[0], minute=start[1], second=0, microsecond=0) + delta * i).strftime("%H:%M")
+            slot = new_slot(day, start_time, category)
+            self.slots.append(slot)
+
+    def __repr__(self):
+        return str(self.slots)
+
+    def __str__(self):
+        return self.__repr()
 
 #-------------------------------------------------------------------------------
 class Schedule:
-    pass
 
-def get_tasks(todo):
-    tasks = []
-    for goal in todo:
-        for project in goal["projects"]:
-            for subproject in project["subprojects"]:
-                for task in subproject["tasks"]:
-                    if task["subtasks"] != []:
-                        tasks.extend(task["subtasks"])
+    def __init__(self, todo, routine):
+        self.schedule = routine
+
+        goals = todo.active_items()
+        tasklist = self.get_tasks(goals)
+
+        # shift routine to start on today
+        today = datetime.datetime.isoweekday(datetime.datetime.today())
+
+        for slot in routine.slots:
+            for task in tasklist:
+                if (slot["category"] == task.goal) or (slot["category"] == task.project) or (slot["category"] == task.subproject):
+                    slot["item"] = task
+                    if task.duration == 1:
+                        tasklist.remove(task)
                     else:
-                        tasks.append(task)
-    return tasks
+                        task.duration -= 1
+                    break
 
-def active_subprojects(project):
-    project["subprojects"] = [subproject for subproject in project["subprojects"] if subproject["active"] == True]
-    return project
+    def get_tasks(self, todo):
+        tasks = []
+        for goal in todo:
+            for project in goal.projects:
+                for subproject in project.subprojects:
+                    for task in subproject.tasks:
+                        if task.subtasks != []:
+                            tasks.extend(task.subtasks)
+                        else:
+                            tasks.append(task)
+        return tasks
 
-def active_projects(goal):
-    goal["projects"] = [active_subprojects(project) for project in goal["projects"] if project["active"] == True]
-    return goal
+def output_schedule(schedule):
+    maxday = max([len("day")] + [len(slot["day"]) for slot in schedule.schedule.slots])
+    maxgoal = max([len("goal")] + [len(slot["item"].goal) for slot in schedule.schedule.slots if "item" in slot])
+    maxproject = max([len("project")] + [len(slot["item"].project) for slot in schedule.schedule.slots if "item" in slot])
+    maxsubproject = max([len("subproject")] + [len(slot["item"].subproject) for slot in schedule.schedule.slots if "item" in slot])
 
-def active_goals(todo):
-    return [active_projects(goal) for goal in todo if goal["active"] == True]
-
-def schedule_week(tasks, routine):
-    schedule = routine
-    goals = active_goals(tasks)
-    tasklist = get_tasks(goals)
-
-    # shift routine to start on today
-    today = datetime.datetime.isoweekday(datetime.datetime.today())
-
-    for slot in routine:
-        for task in tasklist:
-            pp = pprint.PrettyPrinter(indent=2, width=280)
-            if (slot["category"] == task["goal"]) or (slot["category"] == task["project"]) or (slot["category"] == task["subproject"]):
-                slot["item"] = task
-                if task["duration"] == 1:
-                    tasklist.remove(task)
-                else:
-                    task["duration"] -= 1
-                break
-    return schedule
+    strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | {}"
+    print(strfmt.format("day", " time", "goal", "project", "subproject", "task"))
+    for slot in schedule.schedule.slots:
+        day = slot["day"]
+        start = slot["start"]
+        if "item" in slot:
+            item = slot["item"]
+            goal = item.goal
+            project = item.project
+            subproject = item.subproject
+            task = item.name
+            strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | "
+            if subproject == "default":
+                subproject = ""
+            if type(item) is Subtask:
+                strfmt += "{}:{}"
+                subtask = item.name
+                print(strfmt.format(day, start, goal, project, subproject, task, subtask))
+            else:
+                strfmt += "{}"
+                print(strfmt.format(day, start, goal, project, subproject, task))
 
 #-------------------------------------------------------------------------------
 def output(data, todo, routine, schedule):
-    pp = pprint.PrettyPrinter(indent=2, width=280)
+    #pp = pprint.PrettyPrinter(indent=2, width=280)
     #print("TODO:")
     #pp.pprint(todo)
     #print("ROUTINE:")
     #pp.pprint(routine)
     #print("SCHEDULE:")
     #pp.pprint(schedule)
+    output_schedule(schedule)
 
-    maxday = max([len("day")] + [len(slot["day"]) for slot in schedule])
-    maxgoal = max([len("goal")] + [len(slot["item"]["goal"]) for slot in schedule if "item" in slot])
-    maxproject = max([len("project")] + [len(slot["item"]["project"]) for slot in schedule if "item" in slot])
-    maxsubproject = max([len("subproject")] + [len(slot["item"]["subproject"]) for slot in schedule if "item" in slot])
-
-    strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | {}"
-    print(strfmt.format("day", " time", "goal", "project", "subproject", "task"))
-    for slot in schedule:
-        day = slot["day"]
-        start = slot["start"]
-        if "item" in slot:
-            item = slot["item"]
-            goal = item["goal"]
-            project = item["project"]
-            subproject = item["subproject"]
-            task = item["task"]
-            strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | "
-            if subproject == "default":
-                subproject = ""
-            if "subtask" in item:
-                strfmt += "{}:{}"
-                subtask = item["subtask"]
-                print(strfmt.format(day, start, goal, project, subproject, task, subtask))
-            else:
-                strfmt += "{}"
-                print(strfmt.format(day, start, goal, project, subproject, task))
-
-def read():
+def read_data():
     with open("/Users/igaray/Dropbox/textfiles/private/todo.txt", "r") as todofile:
-        filecontents = []
+        data = []
         for line in todofile:
-            filecontents.append([field.strip(" <>") for field in line[:-1].split("|")])
-        filecontents = [item for item in filecontents[1:-1] if not is_empty(item)]
-    return filecontents
+            entry = Entry(line)
+            if not entry.is_empty():
+                data.append(Entry(line))
+    return data
 
 def main():
-    data = read()
-    tasks, data = parse_todo(data)
-    routine, data = parse_routine(data)
-    schedule = schedule_week(tasks, routine)
-    output(data, tasks, routine, schedule)
+    data = read_data()
+    todo = Todo(data)
+    routine = Routine(data)
+    schedule = Schedule(todo, routine)
+    output(data, todo, routine, schedule)
 
 if __name__ == "__main__":
     main()
