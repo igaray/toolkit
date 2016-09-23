@@ -398,6 +398,9 @@ class Routine:
     def __str__(self):
         return self.__repr()
 
+    def shift(self):
+        self.slots = self.slots[1:] + self.slots[:1]
+
 #-------------------------------------------------------------------------------
 class Schedule:
 
@@ -408,7 +411,9 @@ class Schedule:
         tasklist = self.get_tasks(goals)
 
         # shift routine to start on today
-        today = datetime.datetime.isoweekday(datetime.datetime.today())
+        today = datetime.datetime.isoweekday(datetime.datetime.today()) - 1
+        for i in range(today):
+            routine.shift()
 
         for day in routine.slots:
             for slot in day["pomos"]:
