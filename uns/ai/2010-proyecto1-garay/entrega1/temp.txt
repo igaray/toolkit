@@ -1,0 +1,86 @@
+
+%--------------------------------------------------------------------------------------------------%
+display_grid :- 
+    tab(5), write('  '), forall(col(C), (write(C), write(' '))), nl,
+    fila(F),
+    tab(5), write(F),
+    write(' '), mostrarFila(F), nl,
+    fail.
+display_grid.
+
+mostrarFila(F) :-
+    col(C),
+    queMuestro(F, C, Esto),
+    write(Esto), tab(1), fail.
+mostrarFila(_).
+
+queMuestro(F, C, BldCh) :- 
+    at([hostel, _BldName], [F,C]),
+    to_write(hostel, BldCh),
+    !.
+queMuestro(F,C,AgCh) :- 
+    at(Thing, [F,C]),
+    Thing = [agent, AgName],
+    ag_attr(AgName, dir, Dir),
+    ag_char(Dir, AgCh),
+    !.
+queMuestro(F, C, ObjCh) :- 
+    at(Thing, [F,C]),
+    Thing=[ObjType, _ObjName],
+    to_write(ObjType, ObjCh),
+    !.
+queMuestro(F, C, X) :- 
+    cell_land_to_write([F,C], X).
+
+cell_land_to_write([F, C], XToWrite) :- 
+    cell_land([F,C], X),
+    to_write(X, XToWrite).
+                                 
+to_write(plain,    p).
+to_write(forest,   f).
+to_write(mountain, m).
+to_write(treasure, t).
+to_write(hostel,   '[]').
+
+ag_char(n, '^').
+ag_char(e, ':o').
+ag_char(s, 'ö').
+ag_char(w, 'o:').
+
+fila(F) :- 
+    n_of_arrows(NofAs), nnleq(F, NofAs).
+
+col(C) :- 
+    n_of_columns(NofCs), 
+    nnleq(C, NofCs).
+
+nn_pred(1, 2).
+nn_pred(PredM, M) :- 
+    M > 2, 
+    PredM is M - 1.
+
+nnleq(N, M) :- 
+    nn_pred(PredM, M), 
+    nnleq(N, PredM).
+nnleq(M, M).
+
+next(N,Nn) :- 
+    not(var(N)), 
+    !,
+    Nn is N + 1.
+
+next(N,Nn) :- 
+    not(var(Nn)), 
+    !,
+    N is Nn - 1.
+
+element_at(1, [X|_Xs], X)  :- !.
+element_at(Pos, [_|Xs], X) :-
+    Pos > 1,
+    PrePos is Pos -1,
+    element_at(PrePos, Xs, X).
+
+display_env :- 
+    turn(T),
+    write('turn: '), write(T), nl,
+    display_grid.

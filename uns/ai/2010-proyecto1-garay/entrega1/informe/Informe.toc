@@ -1,0 +1,12 @@
+\contentsline {chapter}{\numberline {1}Archivos y Estructura del Agente}{2}
+\contentsline {chapter}{\numberline {2}Agente \texttt {emignator}}{3}
+\contentsline {chapter}{\numberline {3}Representaci\'{o}n del estado interno del agente}{4}
+\contentsline {section}{\numberline {3.1}Proceso de actualizaci\'{o}n del estado interno}{5}
+\contentsline {chapter}{\numberline {4}Toma de decisiones y razonamiento}{7}
+\contentsline {section}{\numberline {4.1}Potenciales mejoras del agente}{8}
+\contentsline {chapter}{\numberline {5}Predicados Auxiliares}{9}
+\contentsline {chapter}{\numberline {6}C\'{o}digo}{10}
+\contentsline {section}{\numberline {6.1}\texttt {agent\_emignator.pl}}{10}
+\contentsline {section}{\numberline {6.2}\texttt {update\_state.pl}}{11}
+\contentsline {section}{\numberline {6.3}\texttt {decide\_action.pl}}{16}
+\contentsline {section}{\numberline {6.4}\texttt {auxiliary\_predicates.pl}}{18}

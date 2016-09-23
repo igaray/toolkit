@@ -1,0 +1,122 @@
+primero, ver si despues de actualizar el estado interno, no paso algo que amerita cambiar la meta
+despues, en funcion de la meta, haya cambiado o no, se decide la accion. 
+
+----------------------------------------------------------------------------------------------------
+things that go in update_state:
+marcar los agentes que vimos hacer pickup como portadores de oro para cuando no tengamos tesoros conocidos por recolectar
+
+----------------------------------------------------------------------------------------------------
+things that go in determine_goal: que cosas hacen cambiar la meta?
+
+goals: go_to_hostel defend_myself hunting gather_treasure go_to_treasure attack explore
+
+if: estoy en un hostel y mi stamina < max_stamina
+    then change goal to: resting
+
+if: hay un tesoro en nuestra posicion
+    then change goal to: gather_treasure
+
+if: el costo del camino mas corto al hostel mas cercano mas 30% del mismo es igual o mayor que stamina
+    then change goal to: go_to_hostel
+
+if: estoy bajo ataque
+    then change goal to: defending_myself    
+
+if: goal is defend_myself y el agente huyo
+    then change goal to: hunting 
+    
+if: hay un tesoro en la lista de tesoro
+    then change goal to: go_to_treasure
+
+if: no hay tesoros sin recolectar y vemos un agente que probablemente tenga oro 
+    then change goal to: attack
+
+if: no hay tesoros sin recolectar y no vemos ningun agente
+    then change goal to: explore
+
+----------------------------------------------------------------------------------------------------
+things that go in determine_action:
+
+if goal is: resting y estoy en un hostel 
+    then no hacer nada
+    
+if goal is: gather_treasure
+    then pickup treasure
+
+if goal is: go_to_hostel
+    then tomar el primer paso del camino hacia el hostel mas cercano
+
+if goal is: defend_myself
+    then attack attacking agent
+
+if goal is: hunting y el agente esta en rango
+    then atacar
+
+if goal is: hunting y el agente no esta en rango
+    then moverse hacia el agente
+    
+if goal is: go_to_treasure 
+    then calcular el camino al tesoro mas cercano y tomar el primer paso
+
+if goal is: attack y el agente enemigo esta en rango
+    entonces atacar
+    
+if goal is: attack y el agente enemigo no esta en rango 
+    then moverse hacia el agente enemigo
+
+if goal is: explore 
+    then encontrar la celda sin explorar mas cercana, y si no hay, la explorada hace mas tiempo
+         y tomar el primer paso en el camino hacia ella
+
+
+----------------------------------------------------------------------------------------------------
+agente:
+    stamina
+    max_stamina
+    fight_skill
+
+percepciones: [Turn, Vision, Attrs, Inventory]
+
+    Turn = integer
+    Vision = [[Pos, Land, Things] | ...]
+    Pos = [F,C]
+        Land = "terreno"
+        Things = [ "cosa" | ...]
+
+    Attrs [ [Attributo, Valor] | ...]
+        atributos:
+            pos             : Position
+            dir             : n e s w
+            stamina         : entero positivo
+            max_stamina     : entero positivo
+            fight_skill     : entero positivo
+
+    Inventory [ "objeto " | ... ]
+
+    objetos, agentes, edificaciones: [ThingType, ThingName, Description] 
+        ThingType: agent | building | treasure
+        ThingName: cte prolog
+        Description: [[Attribute, Value] | ...]
+
+acciones:
+    avanzar
+    pre: la posicion frente del agente de acuerdo a su direccion debe ser llanura o montaña
+    effect: el agente avanza sobre la posicion destino
+        si es llanura, la accion consume 1 stamina e insume 1 turno
+        si es montaña, la accion consume 2 stamina e insume 2 turnos
+
+    girar
+    pre: 
+    effect: el agente queda mirando hacia la direccion cardinal del giro
+        la accion consume 1 stamina e insume 1 turno
+
+    levantar
+    pre: el objeto y el agente deben estar en la misma posicion, no debe haber otro agente en estado conciente en dicha posicion
+    effect: el objeto deja de estar en el suelo y se incorpora al inventario del ante
+        la accion insume 1 turno
+    
+    soltar
+    pre: el agente debe tener el objeto en su inventario
+    effect: el objeto 
+
+----------------------------------------------------------------------------------------------------
