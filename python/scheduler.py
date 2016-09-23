@@ -27,8 +27,8 @@ class RoutineEntry:
                 "duration": self.duration,
                 "category": self.category
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -93,8 +93,8 @@ class TodoEntry:
                 "subtask": self.subtask,
                 "metadata": self.metadata
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -135,8 +135,8 @@ class Goal:
                 "active": self.active, 
                 "projects": self.projects
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -160,8 +160,8 @@ class Project:
                 "active": self.active, 
                 "subprojects": self.subprojects
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -188,8 +188,8 @@ class Subproject:
                 "active": self.active, 
                 "tasks": self.tasks
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -215,8 +215,8 @@ class Task:
                 "subtasks": self.subtasks, 
                 "duration": self.duration
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -242,8 +242,8 @@ class Subtask:
                 "task": self.task, 
                 "duration": self.duration
             }
-        s = str(d)
-        return s
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(d)
 
     def __str__(self):
         return self.__repr__()
@@ -285,7 +285,8 @@ class Todo:
                 sys.exit(1)
 
     def __repr__(self):
-        return str(self.todo)
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(self.todo)
 
     def __str__(self):
         return str(self.todo)
@@ -393,7 +394,8 @@ class Routine:
                     self.slots[day_idx(current_day)]["pomos"].append(Slot(current_day, start_time, entry.category))
 
     def __repr__(self):
-        return str(self.slots)
+        pp = pprint.PrettyPrinter(indent=2, width=480)
+        return pp.pformat(self.slots)
 
     def __str__(self):
         return self.__repr()
@@ -469,7 +471,7 @@ class Schedule:
 
 #-------------------------------------------------------------------------------
 def read_data():
-    with open("/Users/igaray/Dropbox/textfiles/private/todo.txt", "r") as todofile:
+    with open("/Users/igaray/Dropbox/textfiles/private/todo_test.txt", "r") as todofile:
         data = [[], [], []]
         i = 0
         for line in todofile:
@@ -480,11 +482,11 @@ def read_data():
     return (data[0], data[1], data[2])
 
 def output_data(data, todo, routine, schedule):
-    pp = pprint.PrettyPrinter(indent=2, width=280)
-    #print("TODO:")
-    #pp.pprint(todo)
-    #print("ROUTINE:")
-    #pp.pprint(routine)
+    pp = pprint.PrettyPrinter(indent=2, width=480)
+    print("TODO:")
+    pp.pprint(todo)
+    print("ROUTINE:")
+    pp.pprint(routine)
     print("SCHEDULE:")
     schedule.output()
 
