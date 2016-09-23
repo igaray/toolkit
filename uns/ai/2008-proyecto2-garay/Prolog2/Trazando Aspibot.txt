@@ -1,0 +1,39 @@
+chdir('D:\\Personal\\UNS\\materias actuales\\IA\\proyectos\\proyecto2\\Prolog').
+
+consult(entorno),consult(habitacion1).
+
+sim_setup(36),assert(env_agents_position([1,1])),aspibot_setup([1,1]).
+
+env_agents_position(e),env_agents_last_action(Y),get_percept(Z),agt_last_action(S),agt_current_position(T),agt_intention(P),thought(W),agt_frontier(Q).
+
+run_step.
+
+
+
+
+Habitación Default
+
+sim_setup(25),aspibot_setup([1,1]),assert(posAg([1,1])).
+
+sim_setup(25),aspibot_setup([1,1]),assert(posAg([1,1])),run_steps(21).
+
+
+
+run_step.
+
+
+findall(A,celda(A,B,C),L1),length(L1,N1), N2 is N1 - 4, findall(X,mapa(X,Y,Z),L2),length(L2,N2).
+
+limpiadas(S), findall(X,mapa(X,Y,sucio),L),length(L,N),cargas(C),consumidas(C2),busquedas(B).
+
+Consultas Agente
+
+pos(X),ultAcc(Y),agenda(Z),goal(V),thought(W).
+
+home(H).
+
+Consultas Entorno
+
+posAg(X),ultAccAg(Y),getPercept(Z).
+
+C:\Users\fmv\Documents\IA\2008\Proyectos\Proyecto 2\Aspibot\Prolog

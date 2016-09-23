@@ -1,0 +1,96 @@
+﻿el agente prioriza levantar oro antes de ir a descansar a un hostel
+si hay un oro sobre el camino hacia el hostel, lo levantara
+pero si ve uno a la distancia,  no se desviara del camino para juntarlo. 
+
+
+si el agente se encuantra bajo ataque, se defendera hasta que le quede poca energia y entre en el caso anterior en el cual va corriendo a un hostel
+
+si el agente atacante deja de atacar el agente pasara a modo caceria y lo ira a buscar para pegarle
+si el agente enemigo se desvanece, ya sea por cansancio o por ataque nuestro, el agente o bien levantara algun tesoro o pasara a buscar algun tesoro conocido o a explorar
+
+----------------------------------------------------------------------------------------------------
+preguntas:
+
+[x] informacion negativa, sobre missing treasures, inferencia amortizada
+    
+[x] petes de busqueda en cuanto a no optimizar la cantidad de giros en igualdad de condiciones de terreno
+    
+[ ] como identificar un agente como agresivo o cobardo?
+[x] como darnos cuenta si estamos bajo ataque?
+[ ] como darnos cuenta si nos estan atacando por atras?
+[x] como estimar la cantidad de stamin y oro y fight skill de otro agente?
+
+[x] dado una meta, que hacer?
+[x] dada una situacion, como determino la meta?
+[x] que cosas hacen cambiar la meta?
+[x] que acciones se toman para cada meta?
+
+[x] como hacemos para saber si hay celdas sin explorar, o si tenemos todo el mapa explorado?
+[x] hay forma de saber que tamaño tiene el mapa?
+
+
+things related to movement:
+[ ] en todo momento, no acercarse a menos de un cuadrito de distancia a otro agente a menos que planeemos atacar. 
+[ ] si la meta es explorar, ir al cuadrado desconocido mas cercano, o si no hay, al cuadrado explorado hace mas tiempo. 
+
+things related to enemies:
+[ ] hacer complot con agente bugor, pacto de no agresion
+
+[ ] si vemos a dos agentes atacandose, esperar cerca hasta que uno mate a otro y despues limpiarlo y robarlo tesoros
+[ ] si se ven dos agentes peleando, acercarse y esperar a que uno gane, y atacar al ganador, que ya estara cansado 
+
+[X] si vemos a otro agente juntar un tesoro y no hay otros y tenemos stamina suficiente, ir a atacarlo para robarselo
+[X] si se vio a un agente juntar oro, asignar su probabilidad de tener oro como 100% 
+
+things related to health:
+[ ] antes de realizar CUALQUIER accion, fijarse si alcanza la energia para realizar esa accion Y volver a un hostel,
+    sino ir al hostel y despues realizar la accion
+
+[X] if the agent is in a hostel and stamina is below maximum, stay there to rest
+[X] en todo momento, si el stamina es igual al costo de stamina de el camino mas corto a una posada, ir a la posada mas cercana (setear meta a huir)
+[X] podemos considerar un cierto valor de ajuste para sumar al costo, de manera de anticipar imprevistos como ataques inesperados en el camino o cambios en la topografia del terreno
+[X] no salir de la posada hasta que stamina = max_stamina
+
+things related to gold:
+[X] si hay un tesoro a la vista, ir a recolectarlo
+[X] si no conocemos tesoros, la meta es explorar
+
+
+    
+    
+    
+    si la ultima accion de un agente fue moverse hacia adelante enmarcar el area de ataque de ese agente, y mantenerse afuera del area de ataque si esta en modo defensivo, 
+
+    si: lista de tesoros es cero, vida > k (podria ser 3/4 de max_stamina), existe un agente en el rango de vision.
+    entonces atacar
+
+    si: vida es menor a k
+    entonces huir
+
+    si: vida > k, tesoros > 1, no hay agente atacable, 
+    entonces recolectar
+
+    si: vida > k, tesoro > 0 no hay agente atacable
+
+    - mantener el camino hacia una celda meta en algun lugar del estado del agente.
+    - calcular cual es el hostel preferido, donde se prefiere hostels que esten lo mas cercano posible pero no se hayan visitado previamente
+      tomar en cuenta a la hora de calcular cuando el hostel le va a permitir entrar lo que se tarda en llegar a el
+    - the main predicate for deciding the action is divided into different cases, whose clause orders determine priority
+      this, together with the current goal, determine what the agent will do next.
+    - if the agent perceives a treasure in pickup range, pick it up
+      if the agent has calculated a path to a cell and the goal type is urgent, take the next stepp without worrying about treasures or agents
+      decide if the agent needs to visit a hostel urgently
+        if so calculate the path and take the next step
+      if there's an attackable agent in range, attack it
+      if there's a treasure in the agents position, pick it up
+      follow a previously calculated path to a treasure, exploration, hostel cruise or cruise aroound goal
+      no path to follow: calculate a new path to a treasure position and take the first step
+      no path to follow and no treasure: calculate a new path to explore new land and take the first step
+      no path to follow, treasure to seek or land to explore: if agents stamin is below 75% go to hostel and rest, 
+        after this the agent will probably cruise around
+      nothing else important to do, just cruise around
+
+    detect if it is being attacked from behind
+    maybe every few steps take a turn to flip around and update the perception (paranoid mode)
+    what happens when the agent fails to find a path?
+    what happens if there is another agent in a hostel it is in?
