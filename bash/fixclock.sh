@@ -1,0 +1,1 @@
+conky | dzen2 -x $(echo $(xrandr | grep current | cut -d ' ' -f 8) "-" $SYSTRAYWIDTH | bc) -e '' -fg '#91969b' -bg '#121212' -h '16' -w $SYSTRAYWIDTH -ta r -sa r -fn '-*-fixed-medium-r-*-*-12-*-*-*-*-*-*-1' -p & 
