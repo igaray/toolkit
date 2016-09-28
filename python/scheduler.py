@@ -1,12 +1,18 @@
+import collections
+import copy
 import datetime
+import json
 import os
 import pprint
 import string
 import sys
+from itertools import cycle, islice
+
+def jdefault(object):
+    return object.__dict__
 
 #-------------------------------------------------------------------------------
 class RoutineEntry:
-    
     def __init__(self, line):
         self.fields = [field.strip(" <>") for field in line[:-1].split("|")]
         self.day = ''
@@ -20,18 +26,7 @@ class RoutineEntry:
             self.category = self.fields[3]
 
     def __repr__(self):
-        d = {
-                "fields": self.fields,
-                "day": self.day,
-                "start": self.start,
-                "duration": self.duration,
-                "category": self.category
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
-
-    def __str__(self):
-        return self.__repr__()
+        return json.dumps(self, indent=2, default=jdefault)
 
     def is_empty(self):
         return (self.fields == []) or (self.fields == ['']) or (self.fields == ['', '', '', ''])
@@ -44,7 +39,6 @@ class RoutineEntry:
 
 #-------------------------------------------------------------------------------
 class TodoEntry:
-
     def __init__(self, line):
         self.fields = [field.strip(" <>") for field in line[:-1].split("|")]
         self.goal = ''
@@ -60,19 +54,32 @@ class TodoEntry:
                 if len(field) > 2 and (field[:2] in ['+ ', '- ']):
                     if field[0] == '+':
                         self.metadata["active"] = True
-                    else:
+                    elif field[0] == '-':
                         self.metadata["active"] = False
-                    field = field[2:]
+                    else:
+                        print("ERROR: ", self)
+                        sys.exit(1)
+                    # field = field[2:]
                     break
+                if len(field) > 4 and (field[:4] in['[ ] ', '[x] ']):
+                    if field[:3] == '[x]':
+                        self.metadata["done"] = True
+                    elif field[:3] == '[ ]':
+                        self.metadata["done"] = False
+                    else:
+                        print("ERROR: ", self)
+                        sys.exit(1)
+                    break
+                    # field = field[4:]
 
             self.goal = self.fields[0][2:]
             self.project = self.fields[1][2:]
             self.subproject = self.fields[2][2:]
-            self.task = self.fields[3][2:]
-            self.subtask = self.fields[4][2:]
+            self.task = self.fields[3][4:]
+            self.subtask = self.fields[4][4:]
 
             self.metadata_raw = self.fields[5]
-            if self.metadata_raw != '': 
+            if self.metadata_raw != '':
                 metadata_fields = [field.split(':') for field in self.metadata_raw.split(',')]
                 for mdfield in metadata_fields:
                     if len(mdfield)  == 2:
@@ -84,20 +91,7 @@ class TodoEntry:
                 self.metadata["duration"] = 1
 
     def __repr__(self):
-        d = {
-                "fields": self.fields,
-                "goal": self.goal,
-                "project": self.project,
-                "subproject": self.subproject,
-                "task": self.task,
-                "subtask": self.subtask,
-                "metadata": self.metadata
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
-
-    def __str__(self):
-        return self.__repr__()
+        return json.dumps(self, indent=2, default=jdefault)
 
     def is_empty(self):
         return (self.fields == []) or (self.fields == ['']) or (self.fields == ['', '', '', '', '', ''])
@@ -122,231 +116,242 @@ class TodoEntry:
 
 #-------------------------------------------------------------------------------
 class Goal:
-
     def __init__(self, entry):
         self.name = entry.goal
-        self.active = entry.metadata["active"]
+        self.metadata = entry.metadata
         self.projects = []
 
     def __repr__(self):
-        d = {
-                "class": "goal",
-                "name": self.name, 
-                "active": self.active, 
-                "projects": self.projects
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return self.__repr__()
+    def is_active(self):
+        return self.metadata["active"]
 
-    def active_projects(self):
-        self.projects = [project.active_subprojects() for project in self.projects if project.active == True]
-        return self
+    def active(self):
+        c = copy.copy(self)
+        c.projects = [project.active() for project in self.projects if project.is_active()]
+        return c
+
+    def add_project(self, project):
+        self.projects.append(project)
 
 #-------------------------------------------------------------------------------
 class Project:
-
     def __init__(self, entry):
         self.name = entry.project
-        self.active = entry.metadata["active"]
-        self.subprojects = [Subproject(entry)]
+        self.metadata = entry.metadata
+        self.subitems = []
 
     def __repr__(self):
-        d = {
-                "class": "project",
-                "name": self.name, 
-                "active": self.active, 
-                "subprojects": self.subprojects
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return self.__repr__()
+    def is_active(self):
+        return self.metadata["active"]
 
-    def active_subprojects(self):
-        self.subprojects = [subproject for subproject in self.subprojects if subproject.active == True]
-        return self
+    def active(self):
+        c = copy.copy(self)
+        c.subitems = [item.active() for item in self.subitems if item.is_active()]
+        return c
+
+    def has_subitems(self):
+        return self.subitems != []
+
+    def add_item(self, item):
+        self.subitems.append(item)
 
 #-------------------------------------------------------------------------------
 class Subproject:
-
     def __init__(self, entry):
-        if entry.subproject == '':
-            self.name = "default"
-        else:
-            self.name = entry.subproject
-        self.active = entry.metadata["active"]
-        self.tasks = []
+        self.name = entry.subproject
+        self.metadata = entry.metadata
+        self.subitems = []
 
     def __repr__(self):
-        d = {
-                "class": "subproject",
-                "name": self.name, 
-                "active": self.active, 
-                "tasks": self.tasks
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return self.__repr__()
+    def is_active(self):
+        return self.metadata["active"]
+
+    def active(self):
+        c = copy.copy(self)
+        c.subitems = [item.active() for item in self.subitems if item.is_active()]
+        return c
+
+    def has_subitems(self):
+        return self.subitems != []
+
+    def add_item(self, item):
+        self.subitems.append(item)
 
 #-------------------------------------------------------------------------------
 class Task:
-
     def __init__(self, entry, goal, project, subproject):
         self.name = entry.task
-        self.goal = goal
-        self.project = project
-        self.subproject = subproject
-        self.subtasks = []
-        self.duration = entry.metadata["duration"]
+        self.goal = ""
+        if goal:
+            self.goal = goal.name
+        self.project = ""
+        if project:
+            self.project = project.name
+        self.subproject = ""
+        if subproject:
+            self.subproject = subproject.name
+        self.subitems = []
+        self.metadata = entry.metadata
 
     def __repr__(self):
-        d = {
-                "class": "task",
-                "name": self.name, 
-                "goal": self.goal, 
-                "project": self.project, 
-                "subproject": self.subproject, 
-                "subtasks": self.subtasks, 
-                "duration": self.duration
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return self.__repr__()
+    def is_active(self):
+        return not self.metadata["done"]
+
+    def active(self):
+        c = copy.copy(self)
+        c.subitems = [item for item in self.subitems if item.is_active()]
+        return c
+
+    def has_subitems(self):
+        return self.subitems != []
+
+    def add_item(self, item):
+        self.subitems.append(item)
 
 #-------------------------------------------------------------------------------
 class Subtask:
-
     def __init__(self, entry, goal, project, subproject, task):
         self.name = entry.subtask
-        self.goal = goal
-        self.project = project
-        self.subproject = project
-        self.task = task
-        self.duration = entry.metadata["duration"]
+        self.goal = ""
+        if goal:
+            self.goal = goal.name
+        self.project = ""
+        if project:
+            self.project = project.name
+        self.subproject = ""
+        if subproject:
+            self.subproject = subproject.name
+        self.task = ""
+        if task:
+            self.task = task.name
+        self.metadata = entry.metadata
 
     def __repr__(self):
-        d = {
-                "class": "subtask", 
-                "name": self.name, 
-                "goal": self.goal, 
-                "project": self.project, 
-                "subproject": self.subproject, 
-                "task": self.task, 
-                "duration": self.duration
-            }
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(d)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return self.__repr__()
+    def is_active(self):
+        return not self.metadata["done"]
 
 #-------------------------------------------------------------------------------
 class Todo:
-    
     def __init__(self, raw_data):
-
         data = []
         for line in raw_data:
             entry = TodoEntry(line)
             if not entry.is_empty():
                 data.append(entry)
 
-        self.todo = []
+        self.goals = []
 
-        self.current = {}
-        self.current["goal"] = None
-        self.current["project"] = None
-        self.current["subproject"] = "default"
-        self.current["task"] = None
+        self.current_goal = None
+        self.current_project = None
+        self.current_subproject = None
+        self.current_task = None
 
         for entry in data:
             if entry.is_header():
                 pass
-            elif entry.is_goal(): 
+            elif entry.is_goal():
                 self.add_goal(entry)
-            elif entry.is_project(): 
+            elif entry.is_project():
                 self.add_project(entry)
-            elif entry.is_subproject(): 
+            elif entry.is_subproject():
                 self.add_subproject(entry)
-            elif entry.is_task(): 
+            elif entry.is_task():
                 self.add_task(entry)
-            elif entry.is_subtask(): 
+            elif entry.is_subtask():
                 self.add_subtask(entry)
             else:
                 print("ERROR entry: {}".format(entry))
                 sys.exit(1)
 
     def __repr__(self):
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(self.todo)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return str(self.todo)
-
-    def get_goal(self):
-        for goal in self.todo:
-            if goal.name == self.current["goal"]:
-                return goal
-
-    def get_project(self):
-        goal = self.get_goal()
-        projects = [project for project in goal.projects if project.name == self.current["project"]]
-        return projects[0]
-
-    def get_subproject(self):
-        project = self.get_project()
-        subprojects = [subproject for subproject in project.subprojects if subproject.name == self.current["subproject"]]
-        return subprojects[0]
-
-    def get_task(self):
-        subproject = self.get_subproject()
-        tasks = [task for task in subproject.tasks if task.name == self.current["task"]]
-        return tasks[0]
-
-    def active_items(self):
-        return [goal.active_projects() for goal in self.todo if goal.active == True]
+    def output(self):
+        print("TODO:")
+        print(self)
 
     def add_goal(self, entry):
         goal = Goal(entry)
-        self.todo.append(goal)
-        self.current["goal"] = goal.name
-        self.current["project"] = None
-        self.current["subproject"] = "default"
-        self.current["task"] = None
+        self.goals.append(goal)
+        self.current_goal = goal
+        self.current_project = None
+        self.current_subproject = None
+        self.current_task = None
 
     def add_project(self, entry):
         project = Project(entry)
-        goal = self.get_goal()
-        goal.projects.append(project)
-        self.current["project"] = project.name
-        self.current["subproject"] = "default"
-        self.current["task"] = None
+        self.current_goal.add_project(project)
+        self.current_project = project
+        self.current_subproject = None
+        self.current_task = None
 
     def add_subproject(self, entry):
         subproject = Subproject(entry)
-        project = self.get_project()
-        project.subprojects.append(subproject)
-        self.current["subproject"] = subproject.name
-        self.current["task"] = None
+        self.current_project.add_item(subproject)
+        self.current_subproject = subproject
+        self.current_task = None
 
     def add_task(self, entry):
-        task = Task(entry, self.current["goal"], self.current["project"], self.current["subproject"])
-        subproject = self.get_subproject()
-        subproject.tasks.append(task)
-        self.current["task"] = task.name
+        task = Task(entry, self.current_goal, self.current_project, self.current_subproject)
+        if self.current_subproject:
+            self.current_subproject.add_item(task)
+        else:
+            self.current_project.add_item(task)
+        self.current_task = task
 
     def add_subtask(self, entry):
-        subtask = Subtask(entry, self.current["goal"], self.current["project"], self.current["subproject"], self.current["task"])
-        task = self.get_task()
-        task.subtasks.append(subtask)
+        subtask = Subtask(entry, self.current_goal, self.current_project, self.current_subproject, self.current_task)
+        self.current_task.add_item(subtask)
+
+    def active(self):
+        return [goal.active() for goal in self.goals if goal.is_active()]
+
+    def tasklist(self):
+        def add(tasklist, goal, project, subproject, items):
+            key = (goal, project, subproject)
+            if key in tasklist:
+                tasklist[key].extend(items)
+            else:
+                tasklist[key] = items
+
+        tasklist = collections.OrderedDict()
+        goals = self.active()
+        for goal in goals:
+            for project in goal.projects:
+                for project_item in project.subitems:
+                    if type(project_item) is Subproject:
+                        subproject = project_item
+                        for subproject_item in subproject.subitems:
+                            if type(subproject_item) is Task:
+                                task = subproject_item
+                                if task.has_subitems():
+                                    # task has subtasks, add them
+                                    add(tasklist, goal.name, project.name, subproject.name, task.subitems)
+                                else:
+                                    # task has no subtasks, add it
+                                    add(tasklist, goal.name, project.name, subproject.name, [task])
+                            if type(subproject_item) is Subtask:
+                                subtask = subproject_item
+                                add(tasklist, goal.name, project.name, subproject.name, [subtask])
+                    if type(project_item) is Task:
+                        task = project_item
+                        if task.has_subitems():
+                            # task has subtasks, add them
+                            add(tasklist, goal.name, project.name, '', task.subitems)
+                        else:
+                            # task has no subtasks, add it
+                            add(tasklist, goal.name, project.name, '', [task])
+        return tasklist
 
 #-------------------------------------------------------------------------------
 def day_idx(day):
@@ -359,11 +364,10 @@ def day_idx(day):
     if day == "sunday": return 6
     return 7
 
-def Slot(day, start, category):
-    return {"day": day, "start": start, "category": category}
+def Slot(start, category):
+    return {"start": start, "category": category}
 
 class Routine:
-
     def __init__(self, raw_data):
         data = []
         for line in raw_data:
@@ -372,13 +376,13 @@ class Routine:
                 data.append(entry)
 
         self.slots = [
-                {"day": "monday", "pomos": []}, 
-                {"day": "tuesday", "pomos": []}, 
-                {"day": "wednesday", "pomos": []}, 
-                {"day": "thursday", "pomos": []}, 
-                {"day": "friday", "pomos": []}, 
-                {"day": "saturday", "pomos": []}, 
-                {"day": "sunday", "pomos": []}
+                {"day": "monday", "slots": []},
+                {"day": "tuesday", "slots": []},
+                {"day": "wednesday", "slots": []},
+                {"day": "thursday", "slots": []},
+                {"day": "friday", "slots": []},
+                {"day": "saturday", "slots": []},
+                {"day": "sunday", "slots": []}
             ]
 
         current_day = None
@@ -391,87 +395,115 @@ class Routine:
                 delta = datetime.timedelta(minutes=30)
                 for i in range(entry.duration):
                     start_time = (datetime.datetime.today().replace(hour=entry.start[0], minute=entry.start[1], second=0, microsecond=0) + delta * i).strftime("%H:%M")
-                    self.slots[day_idx(current_day)]["pomos"].append(Slot(current_day, start_time, entry.category))
+                    self.slots[day_idx(current_day)]["slots"].append(Slot(start_time, entry.category))
 
     def __repr__(self):
-        pp = pprint.PrettyPrinter(indent=2, width=480)
-        return pp.pformat(self.slots)
+        return json.dumps(self, indent=2, default=jdefault)
 
-    def __str__(self):
-        return self.__repr()
+    def output(self):
+        print("ROUTINE:")
+        print(self)
 
     def shift(self):
         self.slots = self.slots[1:] + self.slots[:1]
 
 #-------------------------------------------------------------------------------
 class Schedule:
-
     def __init__(self, todo, routine):
-        self.schedule = []
 
-        goals = todo.active_items()
-        tasklist = self.get_tasks(goals)
+        def roundrobin(*iterables):
+            pending = len(iterables)
+            nexts = cycle(iter(it).__next__ for it in iterables)
+            while pending:
+                try:
+                    for next in nexts:
+                        yield next()
+                except StopIteration:
+                    pending -= 1
+                    nexts = cycle(islice(nexts, pending))
+
+        def is_candidate(category, key):
+            return category in key
+
+        def build_candidate_list(tasklist, category):
+            l = [tasklist[key] for key in tasklist if is_candidate(category, key)]
+            return [x for x in roundrobin(*l)]
 
         # shift routine to start on today
         today = datetime.datetime.isoweekday(datetime.datetime.today()) - 1
         for i in range(today):
             routine.shift()
 
-        for day in routine.slots:
-            for slot in day["pomos"]:
-                for task in tasklist:
-                    if slot["category"] in [task.goal, task.project, task.subproject]:
-                        self.schedule.append(slot)
-                        slot["item"] = task
-                        if task.duration == 1:
-                            tasklist.remove(task)
-                        else:
-                            task.duration -= 1
-                        break
+        tasklist = todo.tasklist()
+        categories = set([item for sublist in [[slot["category"] for slot in day["slots"]] for day in routine.slots] for item in sublist])
+        candidates = {category: build_candidate_list(tasklist, category) for category in categories}
 
-    def get_tasks(self, todo):
-        tasks = []
-        for goal in todo:
-            for project in goal.projects:
-                for subproject in project.subprojects:
-                    for task in subproject.tasks:
-                        if task.subtasks != []:
-                            tasks.extend(task.subtasks)
-                        else:
-                            tasks.append(task)
-        return tasks
+        self.schedule = copy.copy(routine.slots)
+        for day in self.schedule:
+            for slot in day["slots"]:
+                category = slot["category"]
+                category_items = candidates[category]
+                if category_items != []:
+                    item = category_items[0]
+                    slot["item"] = item
+                    if item.metadata["duration"] == 1:
+                        category_items.remove(item)
+                    else:
+                        item.metadata["duration"] -= 1
 
-    def output(self):
-        maxday = max([len("day")] + [len(slot["day"]) for slot in self.schedule])
-        maxgoal = max([len("goal")] + [len(slot["item"].goal) for slot in self.schedule if "item" in slot])
-        maxproject = max([len("project")] + [len(slot["item"].project) for slot in self.schedule if "item" in slot])
-        maxsubproject = max([len("subproject")] + [len(slot["item"].subproject) for slot in self.schedule if "item" in slot])
+    def __repr__(self):
+        return json.dumps(self, indent=2, default=jdefault)
+
+    def output_schedule(self):
+        print("SCHEDULE:")
+
+        goals = ["goal"]
+        projects = ["project"]
+        subprojects = ["subproject"]
+        for day in self.schedule:
+            for slot in day["slots"]:
+                if "item" in slot and type(slot["item"]) in [Task, Subtask]:
+                    goals.append(slot["item"].goal)
+                    projects.append(slot["item"].project)
+                    subprojects.append(slot["item"].subproject)
+
+        maxday = max([len("day")] + [len(day["day"]) for day in self.schedule])
+        maxgoal = max([len(goal) for goal in goals])
+        maxproject = max([len(project) for project in projects])
+        maxsubproject = max([len(subproject) for subproject in subprojects])
 
         strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | {}"
         print(strfmt.format("day", " time", "goal", "project", "subproject", "task"))
-        for slot in self.schedule:
-            day = slot["day"]
-            start = slot["start"]
-            if "item" in slot:
-                item = slot["item"]
-                goal = item.goal
-                project = item.project
-                subproject = item.subproject
-                task = item.name
-                strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | "
-                if subproject == "default":
-                    subproject = ""
-                if type(item) is Subtask:
-                    strfmt += "{}:{}"
-                    subtask = item.name
-                    print(strfmt.format(day, start, goal, project, subproject, task, subtask))
-                else:
-                    strfmt += "{}"
-                    print(strfmt.format(day, start, goal, project, subproject, task))
+
+        for day in self.schedule:
+            day_name = day["day"]
+            for slot in day["slots"]:
+                start = slot["start"]
+                if "item" in slot and type(slot["item"]) in [Task, Subtask]:
+                    item = slot["item"]
+                    goal = item.goal
+                    project = item.project
+                    subproject = item.subproject
+                    strfmt = "{: >" + str(maxday) + "} {} | {: >" + str(maxgoal) + "} | {: >" + str(maxproject) + "} | {: >" + str(maxsubproject) + "} | "
+                    if type(item) is Task:
+                        task = item.name
+                        strfmt += "{}"
+                        print(strfmt.format(day_name, start, goal, project, subproject, task))
+                    elif type(item) is Subtask:
+                        strfmt += "{}:{}"
+                        task = item.task
+                        subtask = item.name
+                        print(strfmt.format(day_name, start, goal, project, subproject, task, subtask))
+                    else:
+                        print("ERROR: ", item)
+                        sys.exit(1)
+
+    def output(self):
+        self.output_schedule()
 
 #-------------------------------------------------------------------------------
 def read_data():
-    with open("/Users/igaray/Dropbox/textfiles/private/todo_test.txt", "r") as todofile:
+    with open("/Users/igaray/Dropbox/textfiles/private/todo.txt", "r") as todofile:
         data = [[], [], []]
         i = 0
         for line in todofile:
@@ -482,12 +514,6 @@ def read_data():
     return (data[0], data[1], data[2])
 
 def output_data(data, todo, routine, schedule):
-    pp = pprint.PrettyPrinter(indent=2, width=480)
-    print("TODO:")
-    pp.pprint(todo)
-    print("ROUTINE:")
-    pp.pprint(routine)
-    print("SCHEDULE:")
     schedule.output()
 
 def main():
