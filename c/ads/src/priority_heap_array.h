@@ -11,7 +11,7 @@
 void sift_down(int T[], int n, int i);
 
 /* This procedure percolates node i so as to re-establish the heap property in
- * T[1..n]. We suppose that T would be a heap if T[i] were sufficiently small. 
+ * T[1..n]. We suppose that T would be a heap if T[i] were sufficiently small.
  * We also suppose that 1 <= i <= n.
  */
 void percolate(int T[], int n, int i);
@@ -24,14 +24,14 @@ void percolate(int T[], int n, int i);
  * itself to numerous applications, including a remarkable technique called
  * heapsort. It can also be used for the efficient representation of certain
  * dynamic priority lists, such as the event list in a simulation or the list of
- * tasks to be scheduled by an operating system. 
+ * tasks to be scheduled by an operating system.
  *
  * A binary tree is essentially complete if each internal node, with the
  * possible exception of one special node, has exactly two children. The special
  * node, if there is one, is situated on level 1; it has a left child but no
  * right child. Moreover, either all the leaves are on level 0, or else they are
  * on levels 0 and 1, and no leaf on level 1 is to the left of an internal node
- * at the sae level. 
+ * at the sae level.
  *
  * Intuitively, an essentially complete tree is one where the internal nodes are
  * pushed up the tree as high as possible, the internal nodes on the last level
@@ -47,7 +47,7 @@ void percolate(int T[], int n, int i);
  * Equivalently, the height of a tree containing n nodes is k = floor(lg(n)).
  *
  * This kind of tree can be represented by an array T by putting the nodes of
- * depth k, from left to right, in the positions T[2^k], T[2^k+1], ..., 
+ * depth k, from left to right, in the positions T[2^k], T[2^k+1], ...,
  * T[2^(k-1)], with the possible exception of level 0, which may be incomplete.
  *
  *                 T[1]
@@ -67,14 +67,14 @@ void percolate(int T[], int n, int i);
  * Using this representation, the parent of the node represented in T[i] is
  * found in T[i/2] (integer division) for i>2 (the root T[1] does not have
  * a parent), and the children of the node represented in T[I] are found in
- * T[2*i] and T[2*i+1], whenever they exist. 
+ * T[2*i] and T[2*i+1], whenever they exist.
  * The subtree whose root is in T[i] is also easy to identify.
  *
  * A heap is an essentially complete binary tree, each of whose nodes includes
  * an element of information called the value of the node, and which has the
  * property that the value of each internal node is greater than or equal to the
- * values of its children. This is called the heap proprty. 
- * 
+ * values of its children. This is called the heap proprty.
+ *
  * Since the value of each internal node is greater than or equal to the values
  * of its children, which in turn have value greater than or equal to their
  * children, and so on, the heap property ensures that the value of each
@@ -100,11 +100,11 @@ void percolate(int T[], int n, int i);
  *  2     1       6
  *
  * The crucial characteristic of this data structure is that the heap property
- * can be restored efficiently if the value of a node is modified. 
+ * can be restored efficiently if the value of a node is modified.
  * If the value of a node increases to the extent that it becomes greater than
  * the value of its parent, it suffices to exchange these two values, and then
  * continue the same process upwards in the tree until the heap property is
- * restored. 
+ * restored.
  * We say that the modified value has been percolated up to its new position in
  * the heap.
  *

@@ -32,8 +32,11 @@ void linked_list_insert(list_t l1, list_t l2) {
 }
 
 list_t linked_list_delete(list_t l) {
+  printf("XXX1 %d\n", ((l == NULL) ? 1 : 2));
   list_t t = l->next;
+  printf("XXX2 %d\n", ((t == NULL) ? 1 : 2));
   l->next = t->next;
+  printf("XXX3 %d\n", (l->next == NULL ? 1 : 2));
   return t;
 }
 

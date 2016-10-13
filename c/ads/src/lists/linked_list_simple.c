@@ -11,8 +11,7 @@ list_t linked_list_new(data_t d) {
   if (x != NULL) {
     x->data = d;
     x->next = NULL;
-  }
-  else {
+  } else {
     return NULL;
   }
   return x;
@@ -40,13 +39,19 @@ list_t linked_list_delete(list_t l) {
 }
 
 list_t linked_list_next(list_t l) {
-  if (l != NULL) { return l->next; }
-  else {return NULL; }
+  if (l != NULL) {
+    return l->next;
+  } else {
+    return NULL;
+  }
 }
 
 int linked_list_item(list_t l) {
-  if (l != NULL) { return l->data; }
-  else { return 0; }
+  if (l != NULL) {
+    return l->data;
+  } else {
+    return 0;
+  }
 }
 
 void linked_list_print(list_t l) {

@@ -1,0 +1,53 @@
+LISTS
+
+create()
+init(list_t* list, size_t initial_capacity)
+destroy(list_t* list)
+
+insert(list_t)
+insert_at_idx(list_t list, size_t index, data_t element)
+insert_at_pos(list_t list, link_t position, data_t element)
+  append(list_t list, data_t element)
+  prepend(list_t list, data_t element)
+  push(list_t list, data_t element)
+
+remove()
+  pop()
+
+next()
+head()
+tail()
+last()
+
+item()
+empty()
+
+ * TODO
+ * - all: takes a list and a function pointer to a predicate function which
+ *   will be called subsequently on every element of the list. returns
+ *   true if the predicate is true for every element in the list and false
+ *   otherwise
+ * - any: same as all except returns true if the predicate returns true for any
+ *   element in the list
+ * - concatenate: takes a list of lists and returns the result of concatenating
+ *   all of them
+ * - droplast: drops the last element from the list
+ * - dropwhile:
+ * - filter:
+ * - filtermap:
+ * - foldl:
+ * - foreach:
+ * - last:
+ * - map:
+ * - mapfold:
+ * - member:
+ * - nthtail:
+ * - partition:
+ * - reverse:
+ * - sort:
+ * - split:
+ * - splitwith:
+ * - sublist:
+ * - prefix:
+ * - suffix:
+ * - takewhile:

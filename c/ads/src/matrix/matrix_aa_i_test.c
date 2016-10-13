@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "matrix_aa_i.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   int err = 0;
 
   matrix_aa_i_t matrix;
@@ -31,4 +31,3 @@ int main(int argc, char* argv[]) {
 
   return EXIT_SUCCESS;
 }
-

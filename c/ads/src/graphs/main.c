@@ -6,13 +6,9 @@
 
 /* TYPE DEFINITIONS */
 
-typedef struct {
-  uint32_t data;
-} vertex_t;
+typedef struct { uint32_t data; } vertex_t;
 
-typedef struct {
-  uint32_t v, w;
-} edge_t;
+typedef struct { uint32_t v, w; } edge_t;
 
 typedef struct {
   uint32_t e;
@@ -20,7 +16,7 @@ typedef struct {
   uint32_t **adj;
 } graph_t;
 
-typedef graph_t* graph_p;
+typedef graph_t *graph_p;
 
 /* GRAPH ADT API */
 
@@ -37,8 +33,8 @@ typedef graph_t* graph_p;
 
 /* GRAPH ADT IMPLEMENTATION */
 
-uint32_t** matrix_uint32_t(uint32_t n, uint32_t m, uint32_t val) {
-  uint32_t** t = malloc(sizeof(uint32_t*) * n);
+uint32_t **matrix_uint32_t(uint32_t n, uint32_t m, uint32_t val) {
+  uint32_t **t = malloc(sizeof(uint32_t *) * n);
   for (uint32_t i = 0; i < n; i++) {
     t[i] = malloc(sizeof(uint32_t) * m);
   }
@@ -129,7 +125,7 @@ void graph_print(graph_p g) {
 
 /* MAIN */
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   graph_p g = graph_init(8);
   edge_t e;
   e.v = 1;
@@ -151,4 +147,3 @@ int main(int argc, char** argv) {
   graph_destroy(g);
   return EXIT_SUCCESS;
 }
-

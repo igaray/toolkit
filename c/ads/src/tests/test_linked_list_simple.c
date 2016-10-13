@@ -2,16 +2,19 @@
 #include <stdlib.h>
 #include "linked_list_simple.h"
 
-int main()
-{
+int main() {
   list_t l = NULL;
 
   linked_list_print(l);
   l = linked_list_new(0);
+
+  if (0 != linked_list_item(l)) {
+    return EXIT_FAILURE;
+  }
+
   linked_list_print(l);
 
-  for (int i = 5; i > 0; i--)
-  {
+  for (int i = 5; i > 0; i--) {
     list_t t = linked_list_new(i);
     linked_list_insert(l, t);
   }

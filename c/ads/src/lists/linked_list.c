@@ -1,8 +1,19 @@
 #include <stdio.h>
 #include "linked_list.h"
 
+typedef struct node_s {
+  data_t data;
+  link_t next;
+} node_t;
+
+typedef struct list_s {
+  link_t first;
+  link_t last;
+  size_t count;
+} list_t;
+
 list_t *linked_list_new() {
-  list_t *l = (list_t *)malloc(sizeof(list_t));
+  list_t *l = malloc(sizeof(list_t));
   linked_list_init(l);
   return l;
 }
@@ -86,7 +97,7 @@ int linked_list_item(link_t l, data_t *d) {
 
 void linked_list_push(list_t *l, data_t d) {
   if (l != NULL) {
-    link_t n = (node_t *)malloc(sizeof(node_t));
+    link_t n = malloc(sizeof(node_t));
     n->data = d;
     n->next = l->first;
     l->first = n;
@@ -109,7 +120,7 @@ int linked_list_pop(list_t *l, data_t *d) {
 
 int linked_list_insert(list_t *l, link_t k, data_t d) {
   // TODO handle first and last
-  link_t n = (node_t *)malloc(sizeof(node_t));
+  link_t n = malloc(sizeof(node_t));
 
   if (l == NULL) {
     return 1;
