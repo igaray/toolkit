@@ -1,3 +1,18 @@
+"""
+todo
+  - cambiar parseo para soportar orgmode
+  - hacer descomposicion de tareas
+  - asignar duraciones realistas
+  - hacer lugar en la rutina para compras, mandados, cocinar, limpiar y lavar, ocio, etc
+  - poner rutina diaria en el calendario
+  - agregar charlas y videos
+  - agregar libros de casa que quiero leer
+  - agregar libros digitales que quiero leer
+  - agregar series y peliculas
+  - agregar cursos de coursera y edx
+  - ver como representar dependencias y tenerlas en cuenta en el algoritmo
+  - ver como representar due dates y tenerlas en cuenta en el algoritmo
+"""
 import collections
 import copy
 import datetime
