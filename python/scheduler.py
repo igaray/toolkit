@@ -27,6 +27,14 @@ from itertools import cycle, islice
 def jdefault(object):
     return object.__dict__
 
+class TableParser():
+    def __init__(self):
+        pass
+
+class OrgModeParser():
+    def __init__(self):
+        pass
+
 #-------------------------------------------------------------------------------
 class RoutineEntry:
     # PARSE
