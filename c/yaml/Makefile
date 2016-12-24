@@ -8,14 +8,13 @@ all:
 	clang -g -o build/yamltest build/main.o ./deps/libyaml/src/.libs/libyaml.a
 
 deps:
-	mkdir deps
-	cd deps
+	mkdir -p deps
 	wget https://bitbucket.org/xi/libyaml/get/2b9156756423.zip
 	unzip 2b9156756423.zip
-	mv xi-libyaml-2b9156756423 libyaml
-	cd libyaml
-	./bootstrap
-	./configure
+	mv xi-libyaml-2b9156756423 ./deps/libyaml
+	rm -rf 2b9156756423.zip
+	./deps/libyaml/bootstrap
+	./deps/libyaml/configure
 	make
 
 clean:

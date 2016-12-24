@@ -1,0 +1,6 @@
+salary 275.31
+rent -250
+salary 125.43
+food -23.59
+books -60.42
+food -18.07

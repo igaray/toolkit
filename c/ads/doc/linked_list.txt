@@ -1,0 +1,344 @@
+* [x] sedgewick
+* [ ] dsaa
+* [ ] ccan
+* [ ] cgeneric
+* [ ] gdsl
+* [ ] kompini
+* [ ] libwayne
+* [ ] sglib
+* [ ] tlist
+* [ ] simclist
+
+## List
+
+### Types
+```
+node_t:     linked list node type
+position_t: linked list position type
+list_t:     linked list typed
+```
+
+### Operations
+```
+void create(list_t*);
+void destroy(list_t*);
+
+position_t last(list_t);
+position_t first(list_t);
+position_t next(list_t, position_t);
+position_t prev(list_t, position_t);
+position_t find(list_t, element_t);
+element_t getp(list_t, position_t);
+element_t geti(list_t, int);
+int is_empty(list_t);
+int length(list_t);
+void print(list_t, char *string, int *size);
+void insertp(list_t, element_t, position_t);
+void inserti(list_t, element_t, int);
+void insert_first(list_t, element_t);
+void insert_last(list_t, element_t);
+void removep(list_t, position_t);
+void removei(list_t, int);
+```
+
+### Implementations
+
+SIM: simply linked
+When a list is simply linked, each node in the list contains a pointer to
+the following node in the list. Traversal of the list is efficient only going
+forward.
+
+DBL: doubly linked
+When a list is doubly linked, each node in the list contains a pointer to
+the following node and another pointer to the previous node, so that
+traversal of the list is efficient in both forwards and backwards.
+
+LIN: linear
+When a list is linear it has distinguishable starting and ending nodes.
+
+CIR: circular
+When a list is circular the last node points to the first node as its
+following node, making it a ring.
+
+DP: direct positioning
+With direct positiong the element pointed at is in the cell pointed at.
+
+IP: indirect positioning
+With indirect positioning the element pointed at is in the cell that the
+pointed cell points at.
+To solve some limit cases, such as accesing the first element, an empty
+node is included at the beginning of the list.
+
+NH: without head
+WH: with head
+A head is a special structure at the beginning of the list with additional
+information such as the length of the list and pointers to the first and
+last nodes.
+
+/* PYTHON *********************************************************************/
+
+Sequence types - Common Sequence Operations
+
+Operation             Result                                                                            Notes
+x in s                True if an item of s is equal to x, else False                                    (1)
+x not in s            False if an item of s is equal to x, else True                                    (1)
+s + t                 the concatenation of s and t                                                      (6)(7)
+s * n or n * s        n shallow copies of s concatenated                                                (2)(7)
+s[i]                  ith item of s, origin 0                                                           (3)
+s[i:j]                slice of s from i to j                                                            (3)(4)
+s[i:j:k]              slice of s from i to j with step k                                                (3)(5)
+len(s)                length of s
+min(s)                smallest item of s
+max(s)                largest item of s
+s.index(x[, i[, j]])  index of the first occurrence of x in s (at or after index i and before index j)  (8)
+s.count(x)            total number of occurrences of x in s
+
+Notes:
+
+1 While the in and not in operations are used only for simple containment testing in the general case, some specialised sequences (such as str, bytes and bytearray) also use them for subsequence testing:
+2 Values of n less than 0 are treated as 0 (which yields an empty sequence of the same type as s). Note that items in the sequence s are not copied; they are referenced multiple times. This often haunts new Python programmers; consider: What has happened is that [[]] is a one-element list containing an empty list, so all three elements of [[]] * 3 are references to this single empty list. Modifying any of the elements of lists modifies this single list. You can create a list of different lists this way:
+3 If i or j is negative, the index is relative to the end of the string: len(s) + i or len(s) + j is substituted. But note that -0 is still 0.
+4 The slice of s from i to j is defined as the sequence of items with index k such that i <= k < j. If i or j is greater than len(s), use len(s). If i is omitted or None, use 0. If j is omitted or None, use len(s). If i is greater than or equal to j, the slice is empty.
+5 The slice of s from i to j with step k is defined as the sequence of items with index x = i + n*k such that 0 <= n < (j-i)/k. In other words, the indices are i, i+k, i+2*k, i+3*k and so on, stopping when j is reached (but never including j). If i or j is greater than len(s), use len(s). If i or j are omitted or None, they become “end” values (which end depends on the sign of k). Note, k cannot be zero. If k is None, it is treated like 1.
+6 Concatenating immutable sequences always results in a new object. This means that building up a sequence by repeated concatenation will have a quadratic runtime cost in the total sequence length. To get a linear runtime cost, you must switch to one of the alternatives below:
+    if concatenating str objects, you can build a list and use str.join() at the end or else write to an io.StringIO instance and retrieve its value when complete
+    if concatenating bytes objects, you can similarly use bytes.join() or io.BytesIO, or you can do in-place concatenation with a bytearray object. bytearray objects are mutable and have an efficient overallocation mechanism
+    if concatenating tuple objects, extend a list instead
+7 Some sequence types (such as range) only support item sequences that follow specific patterns, and hence don’t support sequence concatenation or repetition.
+8 index raises ValueError when x is not found in s. When supported, the additional arguments to the index method allow efficient searching of subsections of the sequence. Passing the extra arguments is roughly equivalent to using s[i:j].index(x), only without copying any data and with the returned index being relative to the start of the sequence rather than the start of the slice.
+
+Mutable Sequence Types
+
+Operation       Result                                                                 Notes
+s[i] = x        item i of s is replaced by x
+s[i:j] = t      slice of s from i to j is replaced by the contents of the iterable t
+del s[i:j]      same as s[i:j] = []
+s[i:j:k] = t    the elements of s[i:j:k] are replaced by those of t                    (1)
+del s[i:j:k]    removes the elements of s[i:j:k] from the list
+s.append(x)     appends x to the end of the sequence (same as s[len(s):len(s)] = [x])
+s.clear()       removes all items from s (same as del s[:])                            (5)
+s.copy()        creates a shallow copy of s (same as s[:])                             (5)
+s.extend(t)     extends s with the contents of t (same as s[len(s):len(s)] = t)
+s.insert(i, x)  inserts x into s at the index given by i (same as s[i:i] = [x])
+s.pop([i])      retrieves the item at i and also removes it from s                     (2)
+s.remove(x)     remove the first item from s where s[i] == x                           (3)
+s.reverse()     reverses the items of s in place                                       (4)
+
+Notes:
+1 t must have the same length as the slice it is replacing.
+2 The optional argument i defaults to -1, so that by default the last item is removed and returned.
+3 remove raises ValueError when x is not found in s.
+4 The reverse() method modifies the sequence in place for economy of space when reversing a large sequence. To remind users that it operates by side effect, it does not return the reversed sequence.
+5 clear() and copy() are included for consistency with the interfaces of mutable containers that don’t support slicing operations (such as dict and set)
+6 New in version 3.3: clear() and copy() methods.
+
+
+
+The list data type has some more methods. Here are all of the methods of list objects:
+list.append(x)                      Add an item to the end of the list. Equivalent to a[len(a):] = [x].
+list.extend(L)                      Extend the list by appending all the items in the given list. Equivalent to a[len(a):] = L.
+list.insert(i, x)                   Insert an item at a given position. The first argument is the index of the element before which to insert, so a.insert(0, x) inserts at the front of the list, and a.insert(len(a), x) is equivalent to a.append(x).
+list.remove(x)                      Remove the first item from the list whose value is x. It is an error if there is no such item.
+list.pop([i])                       Remove the item at the given position in the list, and return it. If no index is specified, a.pop() removes and returns the last item in the list. (The square brackets around the i in the method signature denote that the parameter is optional, not that you should type square brackets at that position. You will see this notation frequently in the Python Library Reference.)
+list.clear()                        Remove all items from the list. Equivalent to del a[:].
+list.index(x)                       Return the index in the list of the first item whose value is x. It is an error if there is no such item.
+list.count(x)                       Return the number of times x appears in the list.
+list.sort(key=None, reverse=False)  Sort the items of the list in place (the arguments can be used for sort customization, see sorted() for their explanation).
+list.reverse()                      Reverse the elements of the list in place.
+list.copy()                         Return a shallow copy of the list. Equivalent to a[:].
+sort(*, key=None, reverse=None)     This method sorts the list in place, using only < comparisons between items. Exceptions are not suppressed - if any comparison operations fail, the entire sort operation will fail (and the list will likely be left in a partially modified state).
+                                    key specifies a function of one argument that is used to extract a comparison key from each list element (for example, key=str.lower). The key corresponding to each item in the list is calculated once and then used for the entire sorting process. The default value of None means that list items are sorted directly without calculating a separate key value.
+                                    reverse is a boolean value. If set to True, then the list elements are sorted as if each comparison were reversed.
+
+/* SEDGEWICK *****************************************************************/
+
+typedef struct node* link;
+
+struct node {
+  itemType item;
+  link next;
+}
+
+typedef link Node;
+
+void initNodes(int);
+link newNode(int);
+void freeNode(link);
+void insertNext(link);
+link deleteNext(link, link);
+link Next(link);
+int Item(link);
+
+#include <stdlib.h>
+#include "list.h"
+link freelist;
+void initNodes(int N)
+  { int i;
+    freelist = malloc((N+1)*(sizeof *freelist));
+    for (i = 0; i < N+1; i++)
+      freelist[i].next = &freelist[i+1];
+    freelist[N].next = NULL;
+  }
+link newNode(int i)
+  { link x = deleteNext(freelist);
+    x->item = i; x->next = x;
+    return x;
+  }
+void freeNode(link x) { insertNext(freelist, x); }
+void insertNext(link x, link t) { t->next = x->next; x->next = t; }
+link deleteNext(link x) { link t = x->next; x->next = t->next; return t; }
+link Next(link x) { return x->next; }
+int Item(link x) { return x->item; }
+
+/* DSAA **********************************************************************/
+
+typedef int ElementType;
+
+#ifndef _List_H
+#define _List_H
+
+struct Node;
+typedef struct Node *PtrToNode;
+typedef PtrToNode List;
+typedef PtrToNode Position;
+
+List MakeEmpty( List L );
+int IsEmpty( List L );
+int IsLast( Position P, List L );
+Position Find( ElementType X, List L );
+void Delete( ElementType X, List L );
+Position FindPrevious( ElementType X, List L );
+void Insert( ElementType X, List L, Position P );
+void DeleteList( List L );
+Position Header( List L );
+Position First( List L );
+Position Advance( Position P );
+ElementType Retrieve( Position P );
+
+#endif
+
+#include "list.h"
+#include <stdlib.h>
+#include "fatal.h"
+
+/* Place in the interface file */
+struct Node
+{
+    ElementType Element;
+    Position    Next;
+};
+
+List MakeEmpty( List L ) {
+    if( L != NULL )
+        DeleteList( L );
+    L = malloc( sizeof( struct Node ) );
+    if( L == NULL )
+        FatalError( "Out of memory!" );
+    L->Next = NULL;
+    return L;
+}
+
+/* START: fig3_8.txt */
+/* Return true if L is empty */
+int IsEmpty( List L ) { return L->Next == NULL; }
+/* END */
+
+/* START: fig3_9.txt */
+/* Return true if P is the last position in list L */
+/* Parameter L is unused in this implementation */
+int IsLast( Position P, List L ) { return P->Next == NULL; }
+/* END */
+
+/* START: fig3_10.txt */
+/* Return Position of X in L; NULL if not found */
+
+Position Find( ElementType X, List L ) {
+    Position P;
+/* 1*/      P = L->Next;
+/* 2*/      while( P != NULL && P->Element != X )
+/* 3*/          P = P->Next;
+/* 4*/      return P;
+}
+/* END */
+
+/* START: fig3_11.txt */
+/* Delete from a list */
+/* Cell pointed to by P->Next is wiped out */
+/* Assume that the position is legal */
+/* Assume use of a header node */
+
+void Delete( ElementType X, List L ) {
+    Position P, TmpCell;
+    P = FindPrevious( X, L );
+    if( !IsLast( P, L ) )  /* Assumption of header use */
+    {                      /* X is found; delete it */
+        TmpCell = P->Next;
+        P->Next = TmpCell->Next;  /* Bypass deleted cell */
+        free( TmpCell );
+    }
+}
+/* END */
+
+/* START: fig3_12.txt */
+/* If X is not found, then Next field of returned value is NULL */
+/* Assumes a header */
+Position FindPrevious( ElementType X, List L ) {
+    Position P;
+/* 1*/      P = L;
+/* 2*/      while( P->Next != NULL && P->Next->Element != X )
+/* 3*/          P = P->Next;
+
+/* 4*/      return P;
+}
+/* END */
+
+/* START: fig3_13.txt */
+/* Insert (after legal position P) */
+/* Header implementation assumed */
+/* Parameter L is unused in this implementation */
+void Insert( ElementType X, List L, Position P ) {
+    Position TmpCell;
+/* 1*/      TmpCell = malloc( sizeof( struct Node ) );
+/* 2*/      if( TmpCell == NULL )
+/* 3*/          FatalError( "Out of space!!!" );
+/* 4*/      TmpCell->Element = X;
+/* 5*/      TmpCell->Next = P->Next;
+/* 6*/      P->Next = TmpCell;
+}
+/* END */
+
+#if 0
+/* START: fig3_14.txt */
+/* Incorrect DeleteList algorithm */
+
+void DeleteList( List L ) {
+    Position P;
+
+/* 1*/      P = L->Next;  /* Header assumed */
+/* 2*/      L->Next = NULL;
+/* 3*/      while( P != NULL )
+    {
+/* 4*/          free( P );
+/* 5*/          P = P->Next;
+    }
+}
+/* END */
+#endif
+
+/* START: fig3_15.txt */
+/* Correct DeleteList algorithm */
+void DeleteList( List L ) {
+    Position P, Tmp;
+/* 1*/      P = L->Next;  /* Header assumed */
+/* 2*/      L->Next = NULL;
+/* 3*/      while( P != NULL ) {
+/* 4*/          Tmp = P->Next;
+/* 5*/          free( P );
+/* 6*/          P = Tmp; }
+}
+/* END */
+
+Position Header( List L ) { return L; }
+Position First( List L ) { return L->Next; }
+Position Advance( Position P ) { return P->Next; }
+ElementType Retrieve( Position P ) { return P->Element; }
