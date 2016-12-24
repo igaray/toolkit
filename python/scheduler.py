@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 todo
   - cambiar parseo para soportar orgmode
@@ -28,6 +29,7 @@ def jdefault(object):
 
 #-------------------------------------------------------------------------------
 class RoutineEntry:
+    # PARSE
     def __init__(self, line):
         self.fields = [field.strip(" <>") for field in line[:-1].split("|")]
         self.day = ''
@@ -54,6 +56,7 @@ class RoutineEntry:
 
 #-------------------------------------------------------------------------------
 class TodoEntry:
+    # PARSE
     def __init__(self, line):
         self.fields = [field.strip(" <>") for field in line[:-1].split("|")]
         self.goal = ''
@@ -518,7 +521,8 @@ class Schedule:
 
 #-------------------------------------------------------------------------------
 def read_data():
-    with open("/Users/igaray/Dropbox/textfiles/private/todo.txt", "r") as todofile:
+    # PARSE
+    with open("/Users/igaray/Dropbox/Private/todo/todo.org", "r") as todofile:
         data = [[], [], []]
         i = 0
         for line in todofile:
