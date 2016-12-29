@@ -1,7 +1,10 @@
-c/sedgewick
-c/van_wyk
-c/scratchpads
 c/ads/3rdparty
 c/ads/books
 c/ads/build
+c/cello/libCello-2.0.3
+c/learning
+c/yaml/build
+c/yaml/deps
+opengl
 *.swp
+*.tar.gz
