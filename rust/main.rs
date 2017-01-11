@@ -1,4 +1,3 @@
-// This code is editable and runnable!
 fn main() {
     // A simple integer calculator:
     // `+` or `-` means add or subtract by 1
