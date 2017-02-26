@@ -36,6 +36,49 @@ class OrgModeParser():
         pass
 
 #-------------------------------------------------------------------------------
+class TableParser(Parser):
+
+    def __init__(self):
+        pass
+
+    def parse(filename):
+        data = [[], [], []]
+
+        with open(self.filename, "r") as todofile:
+            i = 0
+            for line in todofile:
+                if line == "%%\n":
+                    i += 1
+                else:
+                    data[i].append(line)
+
+        todo_data = data[0]
+        routine_data = data[1]
+
+        return (todo_data, routine_data)
+
+#-------------------------------------------------------------------------------
+class OrgParser:
+
+    def __init__(self):
+        pass
+
+    def parse(filename):
+        with open(self.filename, "r") as todofile:
+            lines = todofile.readlines()
+            self._Start(lines)
+
+#-------------------------------------------------------------------------------
+class CSVParser:
+
+    def __init__(self):
+        pass
+
+    def parse(filename):
+        with open(self.filename, "r") as todofile:
+            pass
+
+#-------------------------------------------------------------------------------
 class RoutineEntry:
     # PARSE
     def __init__(self, line):
@@ -528,23 +571,14 @@ class Schedule:
         self.output_schedule()
 
 #-------------------------------------------------------------------------------
-def read_data():
-    # PARSE
-    with open("/Users/igaray/Dropbox/Private/todo/todo.org", "r") as todofile:
-        data = [[], [], []]
-        i = 0
-        for line in todofile:
-            if line == "%%\n":
-                i += 1
-            else:
-                data[i].append(line)
-    return (data[0], data[1], data[2])
 
 def output_data(data, todo, routine, schedule):
     schedule.output()
 
 def main():
-    todo_data, routine_data, notes_data = read_data()
+    filename = "/Users/igaray/Dropbox/textfiles/private/todo.txt"
+    parser = OrgParser(filename)
+    todo_data, routine_data, notes_data = parser.parse()
     todo = Todo(todo_data)
     routine = Routine(routine_data)
     schedule = Schedule(todo, routine)
