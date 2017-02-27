@@ -62,6 +62,7 @@ from itertools import cycle, islice
 #                    : _Slot _Slots
 #   _Slot            : <LEVEL3> <TIME> <POMODOROS> <TEXT> <NEWLINE>
 
+
 def jdefault(object):
     return object.__dict__
 
@@ -159,8 +160,8 @@ class ParserException(Exception):
         else:
             self.line = 0
             self.col = 0
-        fmt_str = "Parser Error {}:{} :: {}"
-        self.message = fmt_str.format(self.line, self.col, message)
+        fmt = "Parser Error {}:{} :: {}"
+        self.message = fmt.format(self.line, self.col, message)
 
     def __str__(self):
         return self.message
@@ -225,13 +226,13 @@ class Token:
             self.metadata = md
 
     def __repr__(self):
-        fmt_str = "Token(type='{}',line={},col={},lexeme='{}',metadata={})"
-        t = self.type
-        l = self.line
-        c = self.col
-        x = self.lexeme
-        m = self.metadata
-        return fmt_str.format(t, l, c, x, m)
+        fmt = "Token(type='{}',line={},col={},lexeme='{}',metadata={})"
+        type = self.type
+        line = self.line
+        col = self.col
+        lex = self.lexeme
+        md = self.metadata
+        return fmt.format(type, line, col, lex, md)
 
     # def __str__(self):
     #     return "{}:{}:{}".format(self.line, self.col, self.type)
@@ -320,8 +321,8 @@ class OrgLexer:
                 Token(Token.NEWLINE, line_no, m.start(5))
                 ]
         else:
-            fmt_str = "Bad project entry: '{}'"
-            raise LexerException(fmt_str.format(line), line_no)
+            fmt = "Bad project entry: '{}'"
+            raise LexerException(fmt.format(line), line_no)
 
     def _tokenize_line_level4(self, line_no, line):
         m = Token.SUBPROJECT_RE.match(line)
@@ -376,8 +377,8 @@ class OrgLexer:
         elif line.startswith(Token.SUBTASK_LEXEME):
             return self._tokenize_line_subtask(line_no, line)
         else:
-            fmt_str = "Bad entry: {}:{}"
-            raise LexerException(fmt_str.format(line_no, line), line_no)
+            fmt = "Bad entry: {}:{}"
+            raise LexerException(fmt.format(line_no, line), line_no)
 
     def _tokenize_metadata(self, line_no, col_no, metadata):
         try:
@@ -390,8 +391,8 @@ class OrgLexer:
             else:
                 return {}
         except Exception:
-            fmt_str = "Bad metadata entry: {}"
-            raise LexerException(fmt_str.format(metadata), line_no, col_no)
+            fmt = "Bad metadata entry: {}"
+            raise LexerException(fmt.format(metadata), line_no, col_no)
 
 
 class OrgParser:
@@ -410,7 +411,8 @@ class OrgParser:
     def _check_token_stream_length(self, minimum_length):
         if minimum_length > len(self.tokens):
             last_token = self.tokens[-1:]
-            raise ParserException("Unexpected end of token stream.", last_token)
+            msg = "Unexpected end of token stream."
+            raise ParserException(msg, last_token)
 
     def _Start(self):
         """
@@ -433,17 +435,17 @@ class OrgParser:
         newline_token = self.tokens.popleft()
 
         if not level1_token.is_of_type(Token.LEVEL1):
-            fmt_str = "Expected '{}', found '{}'."
-            exc_str = fmt_str.format(Token.LEVEL1_LEXEME, level1_token.lexeme)
-            raise ParserException(exc_str, level1_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.LEVEL1_LEXEME, level1_token.lexeme)
+            raise ParserException(msg, level1_token)
         if not GOALS_token.is_of_type(Token.GOALS):
-            fmt_str = "Expected '{}', found '{}'."
-            exc_str = fmt_str.format(Token.GOALS_LEXEME, GOALS_token.lexeme)
-            raise ParserException(exc_str, GOALS_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.GOALS_LEXEME, GOALS_token.lexeme)
+            raise ParserException(msg, GOALS_token)
         if not newline_token.is_of_type(Token.NEWLINE):
-            fmt_str = "Expected newline, found '{}'."
-            exc_str = fmt_str.format(Token.newline_token.lexeme)
-            raise ParserException(fmt_str, newline_token)
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
 
         return self._Goals()
 
@@ -473,13 +475,21 @@ class OrgParser:
         newline_token = self.tokens.popleft()
 
         if not level2_token.is_of_type(Token.LEVEL2):
-            raise ParserException("Expected '{}', found '{}'.".format(Token.LEVEL2_LEXEME, level2_token.lexeme), level2_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.LEVEL2_LEXEME, level2_token.lexeme)
+            raise ParserException(msg, level2_token)
         if not active_token.is_of_type(Token.ACTIVE):
-            raise ParserException("Expected goal active indicator, found '{}'.".format(active_token.lexeme), active_token)
+            fmt = "Expected goal active indicator, found '{}'."
+            msg = fmt.format(active_token.lexeme)
+            raise ParserException(msg, active_token)
         if not text_token.is_of_type(Token.TEXT):
-            raise ParserException("Expected goal name, found '{}'.".format(text_token.lexeme), text_token)
+            fmt = "Expected goal name, found '{}'."
+            msg = fmt.format(text_token.lexeme)
+            raise ParserException(msg, text_token)
         if not newline_token.is_of_type(Token.NEWLINE):
-            raise ParserException("Expected newline, found '{}'.".format(Token.newline_token.lexeme), newline_token)
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
 
         name = text_token.lexeme
         active = active_token.active()
@@ -514,19 +524,29 @@ class OrgParser:
         newline_token = self.tokens.popleft()
 
         if not level3_token.is_of_type(Token.LEVEL3):
-            raise ParserException("Expected '{}', found '{}'.".format(Token.LEVEL3_LEXEME, level3_token.lexeme), level3_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.LEVEL3_LEXEME, level3_token.lexeme)
+            raise ParserException(msg, level3_token)
         if not active_token.is_of_type(Token.ACTIVE):
-            raise ParserException("Expected project active indicator, found '{}'.".format(active_token.lexeme), active_token)
+            fmt = "Expected project active indicator, found '{}'."
+            msg = fmt.format(active_token.lexeme)
+            raise ParserException(msg, active_token)
         if not text_token.is_of_type(Token.TEXT):
-            raise ParserException("Expected project name, found '{}'.".format(text_token.lexeme), text_token)
+            fmt = "Expected project name, found '{}'."
+            msg = fmt.format(text_token.lexeme)
+            raise ParserException(msg, text_token)
         if not newline_token.is_of_type(Token.NEWLINE):
-            raise ParserException("Expected newline, found '{}'.".format(Token.newline_token.lexeme), newline_token)
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
 
         name = text_token.lexeme
         active = active_token.active()
         subprojects = []
         tasks = []
-        if self.tokens and (self.tokens[0].is_of_type(Token.LEVEL4) or self.tokens[0].is_of_type(Token.TASK)):
+        children = self.tokens and (self.tokens[0].is_of_type(Token.LEVEL4)
+                                    or self.tokens[0].is_of_type(Token.TASK))
+        if children:
             subprojects, tasks = self._ProjectChildren()
 
         metadata = text_token.metadata
@@ -545,7 +565,9 @@ class OrgParser:
         elif self.tokens[0].is_of_type(Token.TASK):
             tasks = self._Tasks()
         else:
-            raise ParserException("Expected a subproject or task, found '{}'".format(self.tokens[0].lexeme), self.tokens[0])
+            fmt = "Expected a subproject or task, found '{}'"
+            msg = fmt.format(self.tokens[0].lexeme)
+            raise ParserException(msg, self.tokens[0])
         return (subprojects, tasks)
 
     def _Subprojects(self):
@@ -575,13 +597,21 @@ class OrgParser:
         newline_token = self.tokens.popleft()
 
         if not level4_token.is_of_type(Token.LEVEL4):
-            raise ParserException("Expected '{}', found '{}'.".format(Token.LEVEL4_LEXEME, level4_token.lexeme), level4_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.LEVEL4_LEXEME, level4_token.lexeme)
+            raise ParserException(msg, level4_token)
         if not active_token.is_of_type(Token.ACTIVE):
-            raise ParserException("Expected subproject active indicator, found '{}'.".format(active_token.lexeme), active_token)
+            fmt = "Expected subproject active indicator, found '{}'."
+            msg = fmt.format(active_token.lexeme)
+            raise ParserException(msg, active_token)
         if not text_token.is_of_type(Token.TEXT):
-            raise ParserException("Expected subproject name, found '{}'.".format(text_token.lexeme), text_token)
+            fmt = "Expected subproject name, found '{}'."
+            msg = fmt.format(text_token.lexeme)
+            raise ParserException(msg, text_token)
         if not newline_token.is_of_type(Token.NEWLINE):
-            raise ParserException("Expected newline, found '{}'.".format(Token.newline_token.lexeme), newline_token)
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
 
         name = text_token.lexeme
         active = active_token.active()
@@ -619,13 +649,21 @@ class OrgParser:
         newline_token = self.tokens.popleft()
 
         if not TASK_token.is_of_type(Token.TASK):
-            raise ParserException("Expected '{}', found '{}'.".format(Token.TASK_LEXEME, TASK_token.lexeme), TASK_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.TASK_LEXEME, TASK_token.lexeme)
+            raise ParserException(msg, TASK_token)
         if not complete_token.is_of_type(Token.COMPLETE):
-            raise ParserException("Expected task completion indicator, found '{}'.".format(complete_token.lexeme), complete_token)
+            fmt = "Expected task completion indicator, found '{}'."
+            msg = fmt.format(complete_token.lexeme)
+            raise ParserException(msg, complete_token)
         if not text_token.is_of_type(Token.TEXT):
-            raise ParserException("Expected task name, found '{}'.".format(text_token.lexeme), text_token)
+            fmt = "Expected task name, found '{}'."
+            msg = fmt.format(text_token.lexeme)
+            raise ParserException(msg, text_token)
         if not newline_token.is_of_type(Token.NEWLINE):
-            raise ParserException("Expected newline, found '{}'.".format(Token.newline_token.lexeme), newline_token)
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
 
         name = text_token.lexeme
         complete = complete_token.complete()
@@ -662,13 +700,21 @@ class OrgParser:
         newline_token = self.tokens.popleft()
 
         if not subtask_token.is_of_type(Token.SUBTASK):
-            raise ParserException("Expected '{}', found '{}'.".format(Token.SUBTASK_LEXEME, subtask_token.lexeme), subtask_token)
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.SUBTASK_LEXEME, subtask_token.lexeme)
+            raise ParserException(msg, subtask_token)
         if not complete_token.is_of_type(Token.COMPLETE):
-            raise ParserException("Expected subtask completion indicator, found '{}'.".format(complete_token.lexeme), complete_token)
+            fmt = "Expected subtask completion indicator, found '{}'."
+            msg = fmt.format(complete_token.lexeme)
+            raise ParserException(msg, complete_token)
         if not text_token.is_of_type(Token.TEXT):
-            raise ParserException("Expected subtask name, found '{}'.".format(text_token.lexeme), text_token)
+            fmt = "Expected subtask name, found '{}'."
+            msg = fmt.format(text_token.lexeme)
+            raise ParserException(msg, text_token)
         if not newline_token.is_of_type(Token.NEWLINE):
-            raise ParserException("Expected newline, found '{}'.".format(Token.newline_token.lexeme), newline_token)
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
 
         name = text_token.lexeme
         complete = complete_token.complete()
