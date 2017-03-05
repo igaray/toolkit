@@ -1,23 +1,11 @@
 #!/usr/local/bin/python3
 
 # Todo:
-# add scheduler
-
-import collections
-import copy
-import datetime
-import json
-import os
-import pprint
-import re
-import resource
-import string
-import sys
-from itertools import cycle, islice
-
+# - add scheduler
+#
 # TODO / GOALS / PROJECTS / SUBPROJECTS / TASKS / SUBTASKS
 # ROUTINE / DAY / SLOT / SCHEDULE
-
+#
 # TOKENS:
 #   GOALS       "* GOALS "
 #   ROUTINE     "* ROUTINE "
@@ -34,7 +22,7 @@ from itertools import cycle, islice
 #   TEXT        ''
 #   TIME        'dd\:dd'
 #   POMODOROS   'd+'
-
+#
 # GRAMMAR:
 #   _Start           : _GoalsEntry _RoutineEntry
 #   _GoalsEntry      : LEVEL1 GOALS NEWLINE _Goals
@@ -71,6 +59,18 @@ from itertools import cycle, islice
 #   _Slots           : _Slot
 #                    : _Slot _Slots
 #   _Slot            : LEVEL3 TIME POMODOROS TEXT NEWLINE
+
+import collections
+import copy
+import datetime
+import json
+import os
+import pprint
+import re
+import resource
+import string
+import sys
+import itertools
 
 
 def jdefault(object):
@@ -206,7 +206,24 @@ class Subtask:
 class Routine:
 
     def __init__(self, days):
-        self.days = days
+
+        self.days = []
+        delta = datetime.timedelta(minutes=30)
+        for routine_day in days:
+            schedule_day = Day(routine_day.name, [])
+            for slot in routine_day.slots:
+                h = slot.hour
+                m = slot.minute
+                today = datetime.datetime.today()
+                base_time = today.replace(hour=h, minute=m,
+                                          second=0, microsecond=0)
+                for i in range(slot.pomodoros):
+                    slot_time = base_time + delta * i
+                    start_time = slot_time.strftime("%H:%M")
+                    schedule_slot = Slot(slot_time.hour, slot_time.minute, 1,
+                                         slot.item_name, start_time)
+                    schedule_day.slots.append(schedule_slot)
+            self.days.append(schedule_day)
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -219,7 +236,7 @@ class Routine:
 
 class Day:
 
-    def __init__(self, name, slots):
+    def __init__(self, name="", slots=[]):
         self.name = name
         self.slots = slots
 
@@ -229,11 +246,13 @@ class Day:
 
 class Slot:
 
-    def __init__(self, time, pomodoros, todo):
-        self.time = time
+    def __init__(self, hour, minute, pomodoros, item_name, start_time=None):
+        self.hour = hour
+        self.minute = minute
         self.pomodoros = pomodoros
-        self.todo = todo
-        # {"start": start, "category": category}
+        self.item_name = item_name
+        self.start_time = start_time
+        self.item = None
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -353,9 +372,9 @@ class Token:
             elif Token.TIME == type:
                 try:
                     hm = self.lexeme.split(':')
-                    h = int(hm[0])
-                    m = int(hm[1])
-                    self.value = (h, m)
+                    hour = int(hm[0])
+                    minute = int(hm[1])
+                    self.value = (hour, minute)
                 except ValueError:
                     fmt = "Bad time format: '{}'"
                     raise LexerException(fmt.format(self.lexeme))
@@ -445,21 +464,21 @@ class OrgLexer:
             raise LexerException(fmt.format(line), line_no)
 
     def _tokenize_line_level3(self, line_no, line):
-        m1 = Token.PROJECT_RE.match(line)
-        m2 = Token.SLOT_RE.match(line)
-        if m1:  # Project entry
-            level3 = Token(Token.LEVEL3, line_no, m1.start(1), m1.group(1))
-            active = Token(Token.ACTIVE, line_no, m1.start(2), m1.group(2))
-            text = Token(Token.TEXT, line_no, m1.start(3), m1.group(3))
-            metadata = self._tokenize_metadata(line_no, m1.start(4), m1.group(4))
-            newline = Token(Token.NEWLINE, line_no, m1.start(5))
+        m = Token.PROJECT_RE.match(line)
+        n = Token.SLOT_RE.match(line)
+        if m:  # Project entry
+            level3 = Token(Token.LEVEL3, line_no, m.start(1), m.group(1))
+            active = Token(Token.ACTIVE, line_no, m.start(2), m.group(2))
+            text = Token(Token.TEXT, line_no, m.start(3), m.group(3))
+            metadata = self._tokenize_metadata(line_no, m.start(4), m.group(4))
+            newline = Token(Token.NEWLINE, line_no, m.start(5))
             return [level3, active, text] + metadata + [newline]
-        elif m2:  # Routine slot entry
-            level3 = Token(Token.LEVEL3, line_no, m2.start(1), m2.group(1))
-            time = Token(Token.TIME, line_no, m2.start(2), m2.group(2))
-            pomodoros = Token(Token.POMODOROS, line_no, m2.start(3), m2.group(3))
-            todo = Token(Token.TEXT, line_no, m2.start(4), m2.group(4))
-            newline = Token(Token.NEWLINE, line_no, m2.start(5))
+        elif n:  # Routine slot entry
+            level3 = Token(Token.LEVEL3, line_no, n.start(1), n.group(1))
+            time = Token(Token.TIME, line_no, n.start(2), n.group(2))
+            pomodoros = Token(Token.POMODOROS, line_no, n.start(3), n.group(3))
+            todo = Token(Token.TEXT, line_no, n.start(4), n.group(4))
+            newline = Token(Token.NEWLINE, line_no, n.start(5))
             return [level3, time, pomodoros, todo, newline]
         else:
             fmt = "Bad project/routine slot entry: '{}'"
@@ -993,7 +1012,7 @@ class OrgParser:
             fmt = "Expected task name, found '{}'."
             msg = fmt.format(time_token.lexeme)
             raise ParserException(msg, time_token)
-        time = time_token.value
+        hour, minute = time_token.value
 
         pomodoros_token = self.tokens.popleft()
         if not pomodoros_token.is_of_type(Token.POMODOROS):
@@ -1007,7 +1026,7 @@ class OrgParser:
             fmt = "Expected todo item name, found '{}'."
             msg = fmt.format(text_token.lexeme)
             raise ParserException(msg, text_token)
-        todo = text_token.value
+        item_name = text_token.value
 
         newline_token = self.tokens.popleft()
         if not newline_token.is_of_type(Token.NEWLINE):
@@ -1015,58 +1034,182 @@ class OrgParser:
             msg = fmt.format(Token.newline_token.lexeme)
             raise ParserException(msg, newline_token)
 
-        return Slot(time, pomodoros, todo)
+        return Slot(hour, minute, pomodoros, item_name)
 
 
 class Schedule:
 
     def __init__(self, todo):
+
         def roundrobin(*iterables):
             pending = len(iterables)
-            nexts = cycle(iter(it).__next__ for it in iterables)
+            nexts = itertools.cycle(iter(it).__next__ for it in iterables)
             while pending:
                 try:
                     for next in nexts:
                         yield next()
                 except StopIteration:
                     pending -= 1
-                    nexts = cycle(islice(nexts, pending))
+                    nexts = itertools.cycle(itertools.islice(nexts, pending))
 
-        def build_candidate_list(tasklist, category):
-            l = [tasklist[key] for key in tasklist if category in key]
-            return [x for x in roundrobin(*l)]
+        def get_todo_items(todo):
+            # get the set of todo items in the routine, which may be goal,
+            # project or subproject names
+            todo_items = set()
+            for day in todo.routine.days:
+                for slot in day.slots:
+                    todo_items.add(slot.item_name)
+            return todo_items
+
+        def todo_to_list(todo):
+
+            def add_item(todo_list, goal, project, subproject, task, item):
+                item.metadata["goal"] = goal
+                item.metadata["project"] = project
+                item.metadata["subproject"] = subproject
+                if type(item) is Subtask:
+                    item.metadata["task"] = task
+                key = (goal, project, subproject)
+                if key not in todo_list:
+                    todo_list[key] = []
+                todo_list[key].append(item)
+
+            def add_items(todo_list, goal, project, subproject, task, items):
+                for item in items:
+                    add_item(todo_list, goal, project, subproject, task, item)
+
+            def add_task(todo_list, goal, project, subproject, task):
+                if task.subtasks:
+                    # task has subtasks, add them
+                    add_items(todo_list, goal, project, subproject,
+                              task.name, task.subtasks)
+                else:
+                    # task has no subtasks, add it
+                    add_items(todo_list, goal, project, subproject,
+                              '', [task])
+
+            def add_project(todo_list, goal, project):
+                if project.subprojects:
+                    for subproject in project.subprojects:
+                        for task in subproject.tasks:
+                            g = goal.name
+                            p = project.name
+                            sp = subproject.name
+                            add_task(todo_list, g, p, sp, task)
+                if project.tasks:
+                    for task in project.tasks:
+                        add_task(todo_list, goal.name, project.name, '', task)
+
+            todo_active = todo.get_active()
+            todo_list = collections.OrderedDict()
+            for goal in todo_active.goals:
+                for project in goal.projects:
+                    add_project(todo_list, goal, project)
+            return todo_list
+
+        def candidate_todo_items(todo_list, todo_items):
+
+            candidate_list = {}
+            for todo_item in todo_items:
+                lst = [todo_list[key] for key in todo_list if todo_item in key]
+                candidate_list[todo_item] = [x for x in roundrobin(*lst)]
+            return candidate_list
 
         # shift routine to start on today
         todo.routine.shift()
-        self.schedule = copy.copy(todo.routine.days)
-        active_goals = todo.goals.get_active()
+        self.schedule = copy.copy(todo.routine)
 
-        for day in self.schedule:
+        todo_items = get_todo_items(todo)
+        todo_list = todo_to_list(todo)
+        candidates = candidate_todo_items(todo_list, todo_items)
+
+        for day in self.schedule.days:
             for slot in day.slots:
                 # get a task/subtask for this slot and assign it
-                print("XXX", slot)
+                category = slot.item_name
+                category_items = candidates[category]
+                if category_items != []:
+                    item = category_items[0]
+                    slot.item = item
+                    if "pomodoros" in item.metadata:
+                        if item.metadata["pomodoros"] == 1:
+                            category_items.remove(item)
+                        else:
+                            item.metadata["pomodoros"] -= 1
+                    else:
+                        category_items.remove(item)
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
 
     def __str__(self):
-        return ""
+        s = ""
+        goals = set(["goal"])
+        projects = set(["project"])
+        subprojects = set(["subproject"])
+
+        days = self.schedule.days
+        for day in days:
+            for slot in day.slots:
+                if slot.item:
+                    if "goal" in slot.item.metadata:
+                        goals.add(slot.item.metadata["goal"])
+                    if "project" in slot.item.metadata:
+                        projects.add(slot.item.metadata["project"])
+                    if "subproject" in slot.item.metadata:
+                        subprojects.add(slot.item.metadata["subproject"])
+
+        maxd = str(max([len("day")] + [len(d.name) for d in days]))
+        maxg = str(max([len(g) for g in goals]))
+        maxp = str(max([len(p) for p in projects]))
+        maxsp = str(max([len(sp) for sp in subprojects]))
+
+        dfmt = "{: >" + maxd + "} {} | "
+        gfmt = "{: >" + maxg + "} | "
+        pfmt = "{: >" + maxp + "} | "
+        spfmt = "{: >" + maxsp + "} | "
+        fmt = dfmt + gfmt + pfmt + spfmt + "{}\n"
+        s += fmt.format("day", "time ", "goal", "project", "subproject",
+                        "task")
+
+        for day in days:
+            d = day.name
+            for slot in day.slots:
+                if slot.item:
+                    g = slot.item.metadata["goal"]
+                    p = slot.item.metadata["project"]
+                    sp = slot.item.metadata["subproject"]
+                    fmt = dfmt + gfmt + pfmt + spfmt
+                    if type(slot.item) is Task:
+                        fmt += "{}\n"
+                        t = slot.item.name
+                        s += fmt.format(d, slot.start_time, g, p, sp, t)
+                    elif type(slot.item) is Subtask:
+                        fmt += "{}:{}\n"
+                        t = slot.item.metadata["task"]
+                        st = slot.item.name
+                        s += fmt.format(d, slot.start_time, g, p, sp, t, st)
+                    else:
+                        print("ERROR: ", slot.item)
+                        sys.exit(1)
+        return s
 
 
-def main():
+def usage():
+    USAGE = """
+    scheduler.py COMMAND FILE
+    COMMAND = active | schedule
+    """
+    print(USAGE)
+
+
+def main(command, filename):
     sys.setrecursionlimit(2000)
-
-    filename = sys.argv[1]
     try:
         lexer = OrgLexer(filename)
         tokens = lexer.tokenize()
-
         parser = OrgParser(tokens)
         todo = parser.parse()
-
-        schedule = Schedule(todo)
-        # print(schedule)
-
     except LexerException as e:
         print(e.message)
         exit(1)
@@ -1074,6 +1217,20 @@ def main():
         print(e.message)
         exit(1)
 
+    if "schedule" == command:
+        schedule = Schedule(todo)
+        print(schedule)
+    elif "active" == command:
+        active_todo = todo.get_active()
+        print(active_todo)
+    else:
+        usage()
+        exit(1)
+
 
 if __name__ == "__main__":
-    main()
+    if 3 == len(sys.argv):
+        main(sys.argv[1], sys.argv[2])
+    else:
+        usage()
+        exit(1)
