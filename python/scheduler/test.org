@@ -1,0 +1,46 @@
+* GOALS
+** - goal1
+*** - project1
+*** - project2
+*** - project3
+** + goal2
+*** - project4
+*** + project5
+**** + subproject1
+- [ ] task1
+  - [ ] subtask1 [pomodoros:3]
+  - [ ] subtask2 [pomodoros:1]
+- [ ] task2 [pomodoros:1]
+*** + project6
+- [ ] task3 [pomodoros:3]
+- [ ] task4 [pomodoros:2]
+** + goal3
+*** + project7
+- [ ] task5 [pomodoros:8]
+*** + project8
+- [ ] task6
+- [ ] task7
+- [ ] task8
+* ROUTINE
+** monday
+*** 00:00 1 do nothing
+** tuesday
+*** 00:00 1 do nothing
+** wednesday
+*** 00:00 1 do nothing
+** thursday
+*** 18:00 2 goal2
+*** 19:00 2 goal3
+** friday
+*** 18:00 2 goal2
+*** 19:00 2 goal3
+** saturday
+*** 14:00 4 project6
+*** 16:00 4 project7
+*** 18:00 4 project8
+*** 20:00 8 goal3
+** sunday
+*** 14:00 4 project7
+*** 16:00 4 project8
+*** 18:00 4 goal2
+*** 20:00 8 goal3

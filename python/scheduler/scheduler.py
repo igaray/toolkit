@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 
 # Todo:
-# - add scheduler
+# - fix bug: routine does not accept days with no slots.
 #
 # TODO / GOALS / PROJECTS / SUBPROJECTS / TASKS / SUBTASKS
 # ROUTINE / DAY / SLOT / SCHEDULE
@@ -85,7 +85,6 @@ def maybe_to_int(string):
 
 
 class Todo:
-
     def __init__(self, goals=[], routine=[]):
         self.goals = goals
         self.routine = routine
@@ -102,7 +101,6 @@ class Todo:
 
 
 class Goal:
-
     def __init__(self, name, active, projects=[], metadata={}):
         self.name = name
         self.active = active
@@ -125,7 +123,6 @@ class Goal:
 
 
 class Project:
-
     def __init__(self, name, active, subprojects=[], tasks=[], metadata={}):
         self.name = name
         self.active = active
@@ -152,7 +149,6 @@ class Project:
 
 
 class Subproject:
-
     def __init__(self, name, active, tasks=[], metadata={}):
         self.name = name
         self.active = active
@@ -171,7 +167,6 @@ class Subproject:
 
 
 class Task:
-
     def __init__(self, name, complete, subtasks=[], metadata={}):
         self.name = name
         self.complete = complete
@@ -190,7 +185,6 @@ class Task:
 
 
 class Subtask:
-
     def __init__(self, name, complete, metadata={}):
         self.name = name
         self.complete = complete
@@ -204,7 +198,6 @@ class Subtask:
 
 
 class Routine:
-
     def __init__(self, days):
 
         self.days = []
@@ -235,7 +228,6 @@ class Routine:
 
 
 class Day:
-
     def __init__(self, name="", slots=[]):
         self.name = name
         self.slots = slots
@@ -245,7 +237,6 @@ class Day:
 
 
 class Slot:
-
     def __init__(self, hour, minute, pomodoros, item_name, start_time=None):
         self.hour = hour
         self.minute = minute
@@ -407,7 +398,6 @@ class Token:
 
 
 class OrgLexer:
-
     def __init__(self, filename):
         self.filename = filename
 
@@ -545,7 +535,6 @@ class OrgLexer:
 
 
 class OrgParser:
-
     def __init__(self, tokens):
         self.tokens = tokens
         self.ast = []
@@ -944,15 +933,7 @@ class OrgParser:
         """
         _Week : _Day _Day _Day _Day _Day _Day _Day
         """
-        day1 = self._Day()
-        day2 = self._Day()
-        day3 = self._Day()
-        day4 = self._Day()
-        day5 = self._Day()
-        day6 = self._Day()
-        day7 = self._Day()
-
-        return [day1, day2, day3, day4, day5, day6, day7]
+        return [self._Day() for _ in range(7)]
 
     def _Day(self):
         """
@@ -1038,7 +1019,6 @@ class OrgParser:
 
 
 class Schedule:
-
     def __init__(self, todo):
 
         def roundrobin(*iterables):
