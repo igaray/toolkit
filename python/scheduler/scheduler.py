@@ -1,8 +1,5 @@
 #!/usr/local/bin/python3
 
-# Todo:
-# - fix bug: routine does not accept days with no slots.
-#
 # TODO / GOALS / PROJECTS / SUBPROJECTS / TASKS / SUBTASKS
 # ROUTINE / DAY / SLOT / SCHEDULE
 #
@@ -144,8 +141,9 @@ class Project:
             return "*** " + self.name
 
     def get_active(self):
-        asp = [sp for sp in self.subprojects if sp.active]
-        return Project(self.name, self.active, asp, self.tasks, self.metadata)
+        asp = [sp.get_incomplete() for sp in self.subprojects if sp.active]
+        it = [t.get_incomplete() for t in self.tasks if not t.complete]
+        return Project(self.name, self.active, asp, it, self.metadata)
 
 
 class Subproject:
@@ -159,11 +157,19 @@ class Subproject:
         return json.dumps(self, indent=2, default=jdefault)
 
     def __str__(self):
+        active = "-"
+        if self.active:
+            active = "+"
+        self_str = "**** {} {}\n".format(active, self.name)
         if self.tasks:
             tasks_str = "\n".join([str(t) for t in self.tasks])
-            return "**** " + self.name + "\n" + tasks_str
+            return self_str + tasks_str
         else:
-            return "**** " + self.name
+            return self_str
+
+    def get_incomplete(self):
+        it = [t.get_incomplete() for t in self.tasks if (not t.complete)]
+        return Subproject(self.name, self.active, it, self.metadata)
 
 
 class Task:
@@ -177,11 +183,19 @@ class Task:
         return json.dumps(self, indent=2, default=jdefault)
 
     def __str__(self):
+        complete = " "
+        if self.complete:
+            complete = "X"
+        self_str = "- [{}] {}".format(complete, self.name)
         if self.subtasks:
-            subtasks_str = "\n".join([str(st) for st in self.subtasks])
-            return "- " + self.name + "\n" + subtasks_str
+            subtasks_str = "\n" + "\n".join([str(st) for st in self.subtasks])
+            return self_str + subtasks_str
         else:
-            return "- " + self.name
+            return self_str
+
+    def get_incomplete(self):
+        ist = [st for st in self.subtasks if (not st.complete)]
+        return Task(self.name, self.complete, ist, self.metadata)
 
 
 class Subtask:
@@ -194,7 +208,10 @@ class Subtask:
         return json.dumps(self, indent=2, default=jdefault)
 
     def __str__(self):
-        return "  - " + self.name
+        complete = " "
+        if self.complete:
+            complete = "X"
+        return "  - [{}] {}".format(complete, self.name)
 
 
 class Routine:
@@ -1088,7 +1105,6 @@ class Schedule:
             return todo_list
 
         def candidate_todo_items(todo_list, todo_items):
-
             candidate_list = {}
             for todo_item in todo_items:
                 lst = [todo_list[key] for key in todo_list if todo_item in key]
@@ -1116,8 +1132,11 @@ class Schedule:
                             category_items.remove(item)
                         else:
                             item.metadata["pomodoros"] -= 1
-                    else:
-                        category_items.remove(item)
+                    # By commenting this out, tasks will continue to be
+                    # scheduled until they are complete. Otherwise they are
+                    # scheduler for a single pomodoro.
+                    # else:
+                    #     category_items.remove(item)
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
