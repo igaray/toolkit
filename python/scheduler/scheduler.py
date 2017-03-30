@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 
 # TODO / GOALS / PROJECTS / SUBPROJECTS / TASKS / SUBTASKS
 # ROUTINE / DAY / SLOT / SCHEDULE
@@ -1216,8 +1216,12 @@ def main(command, filename):
         print(e.message)
         exit(1)
 
-    if "schedule" == command:
+    if "week" == command:
         schedule = Schedule(todo)
+        print(schedule)
+    elif 'today' == command:
+        schedule = Schedule(todo)
+        schedule.schedule.days = schedule.schedule.days[0:1]
         print(schedule)
     elif "active" == command:
         active_todo = todo.get_active()
