@@ -21,7 +21,11 @@
 #   POMODOROS   'd+'
 #
 # GRAMMAR:
-#   _Start           : _GoalsEntry _RoutineEntry
+#   _Start           : _LogsEntry _GoalsEntry _RoutineEntry
+#   _LogsEntry       : LEVEL1 LOGS NEWLINE _Logs
+#   _Logs            : _Log
+#                    | _Log Logs
+#   _Log             : TEXT NEWLINE
 #   _GoalsEntry      : LEVEL1 GOALS NEWLINE _Goals
 #   _Goals           : _Goal
 #                    | _Goal _Goals
@@ -290,6 +294,7 @@ class ParserException(Exception):
 
 
 class Token:
+    LOGS = "LOGS"
     GOALS = "GOALS"
     ROUTINE = "ROUTINE"
     LEVEL1 = "LEVEL1"
@@ -307,6 +312,7 @@ class Token:
     NEWLINE = "NEWLINE"
 
     TYPES = [
+        LOGS,
         GOALS,
         ROUTINE,
         LEVEL1,
@@ -328,11 +334,13 @@ class Token:
     LEVEL2_LEXEME = "** "
     LEVEL3_LEXEME = "*** "
     LEVEL4_LEXEME = "**** "
+    LOGS_LEXEME = "LOGS"
     GOALS_LEXEME = "GOALS"
     ROUTINE_LEXEME = "ROUTINE"
     TASK_LEXEME = "- "
     SUBTASK_LEXEME = "  - "
 
+    LOGS_RE = re.compile("(\*) (LOGS)(\n)")
     GOALS_RE = re.compile("(\*) (GOALS)(\n)")
     ROUTINE_RE = re.compile("(\*) (ROUTINE)(\n)")
     GOAL_RE = re.compile("(\*{2}) ([+\-]) (.*)(\n)")
@@ -431,7 +439,16 @@ class OrgLexer:
 
     def _tokenize_line_level1(self, line_no, line):
         line_rest = line[len(Token.LEVEL1_LEXEME):]
-        if line_rest.startswith(Token.GOALS_LEXEME):
+        if line_rest.startswith(Token.LOGS_LEXEME):
+            m = Token.LOGS_RE.match(line)
+            if m:
+                level1 = Token(Token.LEVEL1, line_no, m.start(1), m.group(1))
+                logs = Token(Token.LOGS, line_no, m.start(2), m.group(2))
+                newline = Token(Token.NEWLINE, line_no)
+                return [level1, logs, newline]
+            else:
+                raise LexerException("Bad top-level logs entry.", line_no)
+        elif line_rest.startswith(Token.GOALS_LEXEME):
             m = Token.GOALS_RE.match(line)
             if m:
                 level1 = Token(Token.LEVEL1, line_no, m.start(1), m.group(1))
@@ -527,6 +544,11 @@ class OrgLexer:
         else:
             raise LexerException("Bad subtask entry.", line_no)
 
+    def _tokenize_line_text(self, line_no, line):
+        text = Token(Token.TEXT, line_no, 0, line[:-1])
+        newline = Token(Token.NEWLINE, line_no, len(line) - 1)
+        return [text, newline]
+
     def _tokenize_line(self, line_no, line):
         if line.startswith(Token.LEVEL1_LEXEME):
             return self._tokenize_line_level1(line_no, line)
@@ -541,8 +563,9 @@ class OrgLexer:
         elif line.startswith(Token.SUBTASK_LEXEME):
             return self._tokenize_line_subtask(line_no, line)
         else:
-            fmt = "Bad entry: {}:{}"
-            raise LexerException(fmt.format(line_no, line), line_no)
+            # fmt = "Bad entry: {}:{}"
+            # raise LexerException(fmt.format(line_no, line), line_no)
+            return self._tokenize_line_text(line_no, line)
 
     def _tokenize_metadata(self, line, col, lexeme):
         if lexeme:
@@ -563,6 +586,14 @@ class OrgParser:
         self.ast = self._Start()
         return self.ast
 
+    def _get_newline_token(self):
+        newline_token = self.tokens.popleft()
+        if not newline_token.is_of_type(Token.NEWLINE):
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
+        return newline_token
+
     def _check_token_stream_length(self, minimum_length):
         if self.tokens:
             if minimum_length > len(self.tokens):
@@ -576,11 +607,64 @@ class OrgParser:
 
     def _Start(self):
         """
-        _Start : _GoalsEntry _RoutineEntry
+        _Start : _Logs _GoalsEntry _RoutineEntry
         """
+        logs = self._LogsEntry()
         goals = self._GoalsEntry()
         routine = self._RoutineEntry()
         return Todo(goals, routine)
+
+    def _LogsEntry(self):
+        """
+        _LogsEntry : LEVEL1 LOGS NEWLINE _Logs
+        """
+        self._check_token_stream_length(3)
+
+        level1_token = self.tokens.popleft()
+        if not level1_token.is_of_type(Token.LEVEL1):
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.LEVEL1_LEXEME, level1_token.lexeme)
+            raise ParserException(msg, level1_token)
+
+        logs_token = self.tokens.popleft()
+        if not logs_token.is_of_type(Token.LOGS):
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format(Token.LOGS_LEXEME, logs_token.lexeme)
+            raise ParserException(msg, logs_token)
+
+        newline_token = self.tokens.popleft()
+        if not newline_token.is_of_type(Token.NEWLINE):
+            fmt = "Expected newline, found '{}'."
+            msg = fmt.format(Token.newline_token.lexeme)
+            raise ParserException(msg, newline_token)
+
+        return self._Logs()
+
+    def _Logs(self):
+        """
+        _Logs : _Log
+              | _Log Logs
+        """
+        log = self._Log()
+        if self.tokens and self.tokens[0].is_of_type(Token.LEVEL1):
+            return None
+        else:
+            return self._Logs()
+
+    def _Log(self):
+        """
+        _Log : TEXT NEWLINE
+        """
+        self._check_token_stream_length(2)
+
+        text_token = self.tokens.popleft()
+        if not text_token.is_of_type(Token.TEXT):
+            fmt = "Expected '{}', found '{}'."
+            msg = fmt.format("arbitrary text", text_token.lexeme)
+            raise ParserException(msg, text_token)
+
+        newline_token = self._get_newline_token()
+        return None
 
     def _GoalsEntry(self):
         """
