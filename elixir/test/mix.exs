@@ -22,6 +22,9 @@ defmodule Test.Mixfile do
   # Dependencies listed here are available only for this project
   # and cannot be accessed from applications inside the apps folder
   defp deps do
-    [{:coverex, "~> 1.4.10", only: [:dev, :test]}]
+    [
+      {:coverex, "~> 1.4.10", only: [:dev, :test]},
+      {:distillery, "~> 1.0"},
+    ]
   end
 end
