@@ -62,8 +62,8 @@
 #   _Slot            : LEVEL3 TIME POMODOROS TEXT NEWLINE
 
 import collections
-import copy
 import datetime
+import itertools
 import json
 import os
 import pprint
@@ -71,23 +71,19 @@ import re
 import resource
 import string
 import sys
-import itertools
+from copy import deepcopy
 
 
 def jdefault(object):
     return object.__dict__
 
 
-def maybe_to_int(string):
-    try:
-        return int(string)
-    except ValueError:
-        return string
-
-
 class Todo:
-    def __init__(self, goals=[], routine=[]):
-        self.goals = goals
+    def __init__(self, goals=None, routine=None):
+        if goals:
+            self.goals = goals
+        else:
+            self.goals = []
         self.routine = routine
 
     def __repr__(self):
@@ -102,11 +98,17 @@ class Todo:
 
 
 class Goal:
-    def __init__(self, name, active, projects=[], metadata={}):
+    def __init__(self, name, active, projects=None, metadata=None):
         self.name = name
         self.active = active
-        self.projects = projects
-        self.metadata = metadata
+        if projects:
+            self.projects = projects
+        else:
+            self.projects = []
+        if metadata:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -124,12 +126,21 @@ class Goal:
 
 
 class Project:
-    def __init__(self, name, active, subprojects=[], tasks=[], metadata={}):
+    def __init__(self, name, active, subprojects=None, tasks=None, metadata=None):
         self.name = name
         self.active = active
-        self.subprojects = subprojects
-        self.tasks = tasks
-        self.metadata = metadata
+        if subprojects:
+            self.subprojects = subprojects
+        else:
+            self.subprojects = []
+        if tasks:
+            self.tasks = tasks
+        else:
+            self.tasks = []
+        if metadata:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -151,11 +162,17 @@ class Project:
 
 
 class Subproject:
-    def __init__(self, name, active, tasks=[], metadata={}):
+    def __init__(self, name, active, tasks=None, metadata=None):
         self.name = name
         self.active = active
-        self.tasks = tasks
-        self.metadata = metadata
+        if tasks:
+            self.tasks = tasks
+        else:
+            self.tasks = []
+        if metadata:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -177,11 +194,17 @@ class Subproject:
 
 
 class Task:
-    def __init__(self, name, complete, subtasks=[], metadata={}):
+    def __init__(self, name, complete, subtasks=None, metadata=None):
         self.name = name
         self.complete = complete
-        self.subtasks = subtasks
-        self.metadata = metadata
+        if subtasks:
+            self.subtasks = subtasks
+        else:
+            self.subtasks = []
+        if metadata:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -203,10 +226,13 @@ class Task:
 
 
 class Subtask:
-    def __init__(self, name, complete, metadata={}):
+    def __init__(self, name, complete, metadata=None):
         self.name = name
         self.complete = complete
-        self.metadata = metadata
+        if metadata:
+            self.metadata = metadata
+        else:
+            self.metadata = {}
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -220,24 +246,7 @@ class Subtask:
 
 class Routine:
     def __init__(self, days):
-
-        self.days = []
-        delta = datetime.timedelta(minutes=30)
-        for routine_day in days:
-            schedule_day = Day(routine_day.name, [])
-            for slot in routine_day.slots:
-                h = slot.hour
-                m = slot.minute
-                today = datetime.datetime.today()
-                base_time = today.replace(hour=h, minute=m,
-                                          second=0, microsecond=0)
-                for i in range(slot.pomodoros):
-                    slot_time = base_time + delta * i
-                    start_time = slot_time.strftime("%H:%M")
-                    schedule_slot = Slot(slot_time.hour, slot_time.minute, 1,
-                                         slot.item_name, start_time)
-                    schedule_day.slots.append(schedule_slot)
-            self.days.append(schedule_day)
+        self.days = days
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -249,25 +258,43 @@ class Routine:
 
 
 class Day:
-    def __init__(self, name="", slots=[]):
-        self.name = name
-        self.slots = slots
+    def __init__(self, name=None, slots=None, items=None):
+        if name:
+            self.name = name
+        else:
+            self.name = ""
+        if slots:
+            self.slots = slots
+        else:
+            self.slots = []
+        if items:
+            self.items = items
+        else:
+            self.items = []
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
 
 
 class Slot:
-    def __init__(self, hour, minute, pomodoros, item_name, start_time=None):
-        self.hour = hour
-        self.minute = minute
-        self.pomodoros = pomodoros
-        self.item_name = item_name
-        self.start_time = start_time
-        self.item = None
+    def __init__(self, start_hour, start_minute, duration, category):
+        self.start_hour = start_hour
+        self.start_minute = start_minute
+        self.duration = duration
+        self.category = category
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
+
+    def startstr(self):
+        h = self.start_hour
+        m = self.start_minute
+        return datetime.time(hour=h, minute=m).strftime("%H:%M")
+
+    def durationstr(self):
+        h = self.duration // 60
+        m = self.duration % 60
+        return datetime.time(hour=h, minute=m).strftime("%H:%M")
 
 
 class LexerException(Exception):
@@ -307,7 +334,7 @@ class Token:
     COMPLETE = "COMPLETE"
     TEXT = "TEXT"
     TIME = "TIME"
-    POMODOROS = "POMODOROS"
+    DURATION = "DURATION"
     METADATA = "METADATA"
     NEWLINE = "NEWLINE"
 
@@ -325,7 +352,7 @@ class Token:
         COMPLETE,
         TEXT,
         TIME,
-        POMODOROS,
+        DURATION,
         METADATA,
         NEWLINE
         ]
@@ -340,18 +367,22 @@ class Token:
     TASK_LEXEME = "- "
     SUBTASK_LEXEME = "  - "
 
-    LOGS_RE = re.compile("(\*) (LOGS)(\n)")
-    GOALS_RE = re.compile("(\*) (GOALS)(\n)")
-    ROUTINE_RE = re.compile("(\*) (ROUTINE)(\n)")
-    GOAL_RE = re.compile("(\*{2}) ([+\-]) (.*)(\n)")
-    PROJECT_RE = re.compile("(\*{3}) ([+\-]) ([^\[\]]*) ?(\[.*\])?(\n)")
+    LOGS_RE       = re.compile("(\*) (LOGS)(\n)")
+    GOALS_RE      = re.compile("(\*) (GOALS)(\n)")
+    ROUTINE_RE    = re.compile("(\*) (ROUTINE)(\n)")
+    GOAL_RE       = re.compile("(\*{2}) ([+\-]) (.*)(\n)")
+    PROJECT_RE    = re.compile("(\*{3}) ([+\-]) ([^\[\]]*) ?(\[.*\])?(\n)")
     SUBPROJECT_RE = re.compile("(\*{4}) ([+\-]) ([^\[\]]*) ?(\[.*\])?(\n)")
-    TASK_RE = re.compile("(\-) (\[.\]) ([^\[\]]*) ?(\[.*\])?(\n)")
-    SUBTASK_RE = re.compile("(\ \ \-) (\[.\]) ([^\[\]]*) ?(\[.*\])?(\n)")
-    DAY_RE = re.compile("(\*{2}) (.*)(\n)")
-    SLOT_RE = re.compile("(\*{3}) (\d\d:\d\d) (\d+) ([^\[\]]*)(\n)")
+    TASK_RE       = re.compile("(\-) (\[.\]) ([^\[\]]*) ?(\[.*\])?(\n)")
+    SUBTASK_RE    = re.compile("(\ \ \-) (\[.\]) ([^\[\]]*) ?(\[.*\])?(\n)")
+    DAY_RE        = re.compile("(\*{2}) (.*)(\n)")
+    SLOT_RE       = re.compile("(\*{3}) (\d\d:\d\d) (\d+[hmp])+ ([^\[\]]*)(\n)")
 
-    def __init__(self, type="UNKNOWN", line=0, col=0, lexeme=""):
+    def __init__(self, type=None, line=0, col=0, lexeme=None):
+        if type is None:
+            type = "UNKNOWN"
+        if lexeme is None:
+            lexeme = ""
         if type not in Token.TYPES:
             fmt = "Unknown token type: {}"
             msg = fmt.format(type)
@@ -362,44 +393,83 @@ class Token:
             self.col = col
             self.lexeme = lexeme
             self.value = None
-
             if Token.TEXT == type:
                 self.value = self.lexeme
             elif Token.ACTIVE == type:
-                if '+' == lexeme:
-                    self.value = True
-                if '-' == lexeme:
-                    self.value = False
+                self._init_active()
             elif Token.COMPLETE == type:
-                if '[ ]' == lexeme:
-                    self.value = False
-                else:
-                    self.value = True
+                self._init_complete()
             elif Token.METADATA == type:
-                try:
-                    d = {y[0]: maybe_to_int(y[1])
-                         for y
-                         in [x.split(':') for x in lexeme[1:-1].split(',')]
-                         }
-                    self.value = d
-                except Exception:
-                    fmt = "Bad metadata entry: {}"
-                    raise LexerException(fmt.format(lexeme), line, col)
+                self._init_metadata()
             elif Token.TIME == type:
-                try:
-                    hm = self.lexeme.split(':')
-                    hour = int(hm[0])
-                    minute = int(hm[1])
-                    self.value = (hour, minute)
-                except ValueError:
-                    fmt = "Bad time format: '{}'"
-                    raise LexerException(fmt.format(self.lexeme))
-            elif Token.POMODOROS == type:
-                try:
-                    self.value = int(self.lexeme)
-                except ValueError:
-                    fmt = "Bad integer: '{}'"
-                    raise LexerException(fmt.format(line), line, col)
+                self._init_time()
+            elif Token.DURATION == type:
+                self._init_duration()
+
+    def _init_active(self):
+        if '+' == self.lexeme:
+            self.value = True
+        if '-' == self.lexeme:
+            self.value = False
+
+    def _init_complete(self):
+        if '[ ]' == self.lexeme:
+            self.value = False
+        else:
+            self.value = True
+
+    def _init_metadata(self):
+        try:
+            l = self.lexeme[1:-1] # strip the [ ] at the beginning and end
+            p = l.split(',') # split into k:v pairs
+            kvs = [kv.split(':') for kv in p] # split the k:v pairs
+            md = {kv[0]: kv[1] for kv in kvs}
+            if "duration" in md:
+                md["duration"] = self._duration(md["duration"])
+            self.value = md
+        except Exception as e:
+            fmt = "Bad metadata entry: '{}'\nError: {}"
+            raise LexerException(fmt.format(self.lexeme, e), self.line, self.col)
+
+    def _init_time(self):
+        try:
+            hm = self.lexeme.split(':')
+            hour = int(hm[0])
+            minute = int(hm[1])
+            self.value = (hour, minute)
+        except ValueError:
+            fmt = "Bad time format: '{}'"
+            raise LexerException(fmt.format(self.lexeme))
+        except IndexError:
+            fmt = "Bad time format: '{}'"
+            raise LexerException(fmt.format(self.lexeme))
+
+    def _init_duration(self):
+        try:
+            self.value = self._duration(self.lexeme)
+        except ValueError:
+            fmt = "Bad integer: '{}'"
+            raise LexerException(fmt.format(self.lexeme), self.line, self.col)
+
+    def _duration(self, duration):
+        match = re.match("^(\d+h)?(\d+m)?$|^(\d+p)$", duration)
+        h = m = 0
+        if match:
+            h, m, p = match.groups()
+            if p: # duration specified in pomodoros
+                p = int(p[:-1]) # convert to integer
+                m = p * 30
+            else:
+                if h: # duration specified in hours
+                    h = int(h[:-1])
+                else:
+                    h = 0
+                if m: # duration specified in minutes
+                    m = int(m[:-1])
+                else:
+                    m = 0
+                m = 60 * h + m
+        return m
 
     def __repr__(self):
         fmt = "Token(type='{}',line={},col={},lexeme='{}',value={})"
@@ -500,10 +570,10 @@ class OrgLexer:
         elif n:  # Routine slot entry
             level3 = Token(Token.LEVEL3, line_no, n.start(1), n.group(1))
             time = Token(Token.TIME, line_no, n.start(2), n.group(2))
-            pomodoros = Token(Token.POMODOROS, line_no, n.start(3), n.group(3))
+            duration = Token(Token.DURATION, line_no, n.start(3), n.group(3))
             todo = Token(Token.TEXT, line_no, n.start(4), n.group(4))
             newline = Token(Token.NEWLINE, line_no, n.start(5))
-            return [level3, time, pomodoros, todo, newline]
+            return [level3, time, duration, todo, newline]
         else:
             fmt = "Bad project/routine slot entry: '{}'"
             raise LexerException(fmt.format(line), line_no)
@@ -572,9 +642,6 @@ class OrgLexer:
             return [Token(Token.METADATA, line, col, lexeme)]
         else:
             return []
-
-    def _tokenize_duration(self, lexeme):
-        return None
 
 
 class OrgParser:
@@ -704,13 +771,13 @@ class OrgParser:
             raise ParserException(msg, time_token)
         return time_token
 
-    def _get_pomodoros_token(self):
-        pomodoros_token = self.tokens.popleft()
-        if not pomodoros_token.is_of_type(Token.POMODOROS):
-            fmt = "Expected integer, found '{}'."
-            msg = fmt.format(pomodoros_token.lexeme)
-            raise ParserException(msg, pomodoros_token)
-        return pomodoros_token
+    def _get_duration_token(self):
+        duration_token = self.tokens.popleft()
+        if not duration_token.is_of_type(Token.DURATION):
+            fmt = "Expected duration, found '{}'."
+            msg = fmt.format(duration_token.lexeme)
+            raise ParserException(msg, duration_token)
+        return duration_token
 
     def _get_newline_token(self):
         newline_token = self.tokens.popleft()
@@ -1052,19 +1119,22 @@ class OrgParser:
 
         level3_token = self._get_level3_token()
         time_token = self._get_time_token()
-        pomodoros_token = self._get_pomodoros_token()
+        duration_token = self._get_duration_token()
         text_token =  self._get_text_token()
         newline_token = self._get_newline_token()
 
-        hour, minute = time_token.value
-        pomodoros = pomodoros_token.value
-        item_name = text_token.value
+        start_hour, start_minute = time_token.value
+        duration = duration_token.value
+        item = text_token.value
 
-        return Slot(hour, minute, pomodoros, item_name)
+        return Slot(start_hour, start_minute, duration, item)
 
 
 class Schedule:
+
     def __init__(self, todo):
+
+        global item_duration
 
         def roundrobin(*iterables):
             pending = len(iterables)
@@ -1077,14 +1147,13 @@ class Schedule:
                     pending -= 1
                     nexts = itertools.cycle(itertools.islice(nexts, pending))
 
-        def get_todo_items(todo):
-            # get the set of todo items in the routine, which may be goal,
+        def get_categories(todo):
             # project or subproject names
-            todo_items = set()
+            categories = set()
             for day in todo.routine.days:
                 for slot in day.slots:
-                    todo_items.add(slot.item_name)
-            return todo_items
+                    categories.add(slot.category)
+            return categories
 
         def todo_to_list(todo):
 
@@ -1132,39 +1201,98 @@ class Schedule:
                     add_project(todo_list, goal, project)
             return todo_list
 
-        def candidate_todo_items(todo_list, todo_items):
+        def candidate_items(todo_list, categories):
             candidate_list = {}
-            for todo_item in todo_items:
-                lst = [todo_list[key] for key in todo_list if todo_item in key]
-                candidate_list[todo_item] = [x for x in roundrobin(*lst)]
+            for category in categories:
+                lst = [todo_list[key] for key in todo_list if category in key]
+                candidate_list[category] = [x for x in roundrobin(*lst)]
             return candidate_list
 
         # shift routine to start on today
         todo.routine.shift()
-        self.schedule = copy.copy(todo.routine)
 
-        todo_items = get_todo_items(todo)
+        self.days = []
+        for day in todo.routine.days:
+            self.days.append(Day(day.name, day.slots, []))
+
+        categories = get_categories(todo)
         todo_list = todo_to_list(todo)
-        candidates = candidate_todo_items(todo_list, todo_items)
+        candidates = candidate_items(todo_list, categories)
 
-        for day in self.schedule.days:
+        for day in self.days:
             for slot in day.slots:
-                # get a task/subtask for this slot and assign it
-                category = slot.item_name
-                category_items = candidates[category]
-                if category_items != []:
-                    item = category_items[0]
-                    slot.item = item
-                    if "pomodoros" in item.metadata:
-                        if item.metadata["pomodoros"] == 1:
-                            category_items.remove(item)
+                slot_items = []
+                category_items = candidates[slot.category]
+
+                # we will stop when either
+                # A) there are no more items in the slot's category, or
+                # B) the following item in the slot's category doesn't fit in this slot
+                stop = False
+                while not stop:
+                    ssh = slot.start_hour
+                    ssm = slot.start_minute
+                    sdm = slot.duration
+                    slot_start = datetime.datetime.today().replace(hour=ssh, minute=ssm)
+                    slot_duration = datetime.timedelta(minutes=sdm)
+                    if not category_items:
+                        # nothing to be assigned to this slot, just skip it
+                        stop = True
+                    else:
+                        # if there are items in this category, pick the first one
+                        # and check whether it has to be removed from the list
+                        # of items in this category
+                        item = category_items[0]
+                        if "duration" in item.metadata:
+                            idm = item.metadata["duration"]
+                            item_duration = datetime.timedelta(minutes=idm)
+
+                            if item_duration < slot_duration:
+                                # the task took less than the time in the slot
+                                # remove it from the todo list
+
+                                item2 = deepcopy(category_items[0])
+                                category_items.remove(category_items[0])
+                                item2.metadata["start"] = (slot.start_hour, slot.start_minute)
+                                slot_items.append(item2)
+
+                                # update the slot's start and duration
+                                slot_start = slot_start + item_duration
+                                slot_duration = slot_duration - item_duration
+                                slot.start_hour = slot_start.hour
+                                slot.start_minute = slot_start.minute
+                                slot.duration = slot_duration.seconds // 60
+                            elif item_duration == slot_duration:
+                                # the task fills up the slot exactly, remove the
+                                # task from the list and move on to the next slot
+                                # todo
+                                item2 = deepcopy(category_items[0])
+                                category_items.remove(category_items[0])
+                                item2.metadata["start"] = (slot.start_hour, slot.start_minute)
+                                slot_items.append(item2)
+                                stop = True
+                            else:
+                                # the task took more time than the duration of the
+                                # slot. substract the slot duration from the task
+                                # duration and leave it in the todo list
+                                item_duration = item_duration - slot_duration
+                                idm = item_duration.seconds // 60
+                                item.metadata["duration"] = idm
+
+                                item2 = deepcopy(category_items[0])
+                                item2.metadata["start"] = (slot.start_hour, slot.start_minute)
+                                item2.metadata["duration"] = slot.duration
+                                slot_items.append(item2)
+                                stop = True
                         else:
-                            item.metadata["pomodoros"] -= 1
-                    # By commenting this out, tasks will continue to be
-                    # scheduled until they are complete. Otherwise they are
-                    # scheduler for a single pomodoro.
-                    # else:
-                    #     category_items.remove(item)
+                            # the duration of this task is not specified, and
+                            # thus occupies the entire slot, and possibly others
+                            item2 = deepcopy(category_items[0])
+                            item2.metadata["start"] = (slot.start_hour, slot.start_minute)
+                            item2.metadata["duration"] = slot.duration
+                            slot_items.append(item2)
+                            stop = True
+                day.items.extend(slot_items)
+
 
     def __repr__(self):
         return json.dumps(self, indent=2, default=jdefault)
@@ -1175,49 +1303,54 @@ class Schedule:
         projects = set(["project"])
         subprojects = set(["subproject"])
 
-        days = self.schedule.days
+        days = self.days
         for day in days:
-            for slot in day.slots:
-                if slot.item:
-                    if "goal" in slot.item.metadata:
-                        goals.add(slot.item.metadata["goal"])
-                    if "project" in slot.item.metadata:
-                        projects.add(slot.item.metadata["project"])
-                    if "subproject" in slot.item.metadata:
-                        subprojects.add(slot.item.metadata["subproject"])
+            for item in day.items:
+                if "goal" in item.metadata:
+                    goals.add(item.metadata["goal"])
+                if "project" in item.metadata:
+                    projects.add(item.metadata["project"])
+                if "subproject" in item.metadata:
+                    subprojects.add(item.metadata["subproject"])
 
         maxd = str(max([len("day")] + [len(d.name) for d in days]))
         maxg = str(max([len(g) for g in goals]))
         maxp = str(max([len(p) for p in projects]))
         maxsp = str(max([len(sp) for sp in subprojects]))
 
-        dfmt = "{: >" + maxd + "} {} | "
+        dfmt = "{: >" + maxd + "} | {} | {: <8} | "
         gfmt = "{: >" + maxg + "} | "
         pfmt = "{: >" + maxp + "} | "
         spfmt = "{: >" + maxsp + "} | "
         fmt = dfmt + gfmt + pfmt + spfmt + "{}\n"
-        s += fmt.format("day", "time ", "goal", "project", "subproject",
-                        "task")
+        s += fmt.format("day", "time ", "duration", "goal", "project", "subproject", "task")
 
         for day in days:
             d = day.name
-            for slot in day.slots:
-                if slot.item:
-                    g = slot.item.metadata["goal"]
-                    p = slot.item.metadata["project"]
-                    sp = slot.item.metadata["subproject"]
+            for item in day.items:
+                if item:
+                    g = item.metadata["goal"]
+                    p = item.metadata["project"]
+                    sp = item.metadata["subproject"]
                     fmt = dfmt + gfmt + pfmt + spfmt
-                    if type(slot.item) is Task:
+
+                    h, m = item.metadata["start"]
+                    r = item.metadata["duration"]
+                    rh = r // 60
+                    rm = r % 60
+                    start_time = datetime.time(hour=h, minute=m).strftime("%H:%M")
+                    duration = datetime.time(hour=rh, minute=rm).strftime("%H:%M")
+                    if type(item) is Task:
                         fmt += "{}\n"
-                        t = slot.item.name
-                        s += fmt.format(d, slot.start_time, g, p, sp, t)
-                    elif type(slot.item) is Subtask:
+                        t = item.name
+                        s += fmt.format(d, start_time, duration, g, p, sp, t)
+                    elif type(item) is Subtask:
                         fmt += "{}:{}\n"
-                        t = slot.item.metadata["task"]
-                        st = slot.item.name
-                        s += fmt.format(d, slot.start_time, g, p, sp, t, st)
+                        t = item.metadata["task"]
+                        st = item.name
+                        s += fmt.format(d, start_time, duration, g, p, sp, t, st)
                     else:
-                        print("ERROR: ", slot.item)
+                        print("ERROR: ", item)
                         sys.exit(1)
         return s
 
@@ -1225,7 +1358,7 @@ class Schedule:
 def usage():
     USAGE = """
     scheduler.py COMMAND FILE
-    COMMAND = active | schedule
+    COMMAND = active | week | today | next
     """
     print(USAGE)
 
@@ -1249,7 +1382,13 @@ def main(command, filename):
         print(schedule)
     elif 'today' == command:
         schedule = Schedule(todo)
-        schedule.schedule.days = schedule.schedule.days[0:1]
+        schedule.days = schedule.days[0:1]
+        print("{}:".format(schedule.days[0].name))
+        print(schedule)
+    elif "tomorrow" == command:
+        schedule = Schedule(todo)
+        schedule.days = schedule.days[1:2]
+        print("{}:".format(schedule.days[0].name))
         print(schedule)
     elif "active" == command:
         active_todo = todo.get_active()
