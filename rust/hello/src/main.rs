@@ -1,4 +1,16 @@
 // This code is editable and runnable!
+struct MyStruct {
+    u: u64,
+    a: [u64; 256],
+    v: Vec<u64>
+}
+
+impl Default for MyStruct {
+    fn default() -> MyStruct{
+        MyStruct{u: 0, a: [0; 256], v: vec![0, 1024]}
+    }
+}
+
 fn main() {
     // A simple integer calculator:
     // `+` or `-` means add or subtract by 1
