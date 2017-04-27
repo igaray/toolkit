@@ -20,5 +20,20 @@ defmodule TestApp1 do
 
   def test do
     IO.puts "Test1"
+
+    try do
+	:ok = g()
+    rescue
+        e in MatchError -> 
+            %MatchError{term: {:error, reason}} = e
+            IO.puts "A match error occured: #{inspect reason}"
+	f -> 
+            IO.puts "An unexpected error occurred: #{inspect f}"
+    end
+  end
+
+  defp g do
+    {:error, "reason"}
+    1 / 0
   end
 end
