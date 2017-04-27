@@ -1,0 +1,5 @@
+* GOALS
+** + goal: g1
+*** + project: p1
+- [ ] task: t1
+  - [ ] subtask: st1

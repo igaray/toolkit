@@ -10,8 +10,8 @@
 * [ ] linear/queue_array              A FIFO queue implemented with a dynamic array.
 * [ ] linear/queue_list               A FIFO queue implemented with a simply linked list.
 * [ ] linear/priority_heap            A priority heap implemented with dynamic arrays.
-* [ ] hash/string_hashmap             
-* [ ] hash/int_hashmap                
+* [ ] hash/string_hashmap
+* [ ] hash/int_hashmap
 * [ ] hash/gen_hashmap                A generic hash map using macros. User must provide own hashing function.
 * [ ] sets/disjoint_sets_array        A disjoint set implemented with dynamic arrays.
 * [ ] sets/disjoint_sets_list         A disjoint set implemented with simply linked lists.
@@ -39,72 +39,6 @@ set
 get
 ```
 
-## List
-
-### Types
-```
-node_t:     linked list node type
-position_t: linked list position type
-list_t:     linked list typed
-```
-
-### Operations
-```
-void create(list_t*);
-void destroy(list_t*);
-
-position_t last(list_t);
-position_t first(list_t);
-position_t next(list_t, position_t);
-position_t prev(list_t, position_t);
-position_t find(list_t, element_t);
-element_t getp(list_t, position_t);
-element_t geti(list_t, int);
-int is_empty(list_t);
-int length(list_t);
-void print(list_t, char *string, int *size);
-void insertp(list_t, element_t, position_t);
-void inserti(list_t, element_t, int);
-void insert_first(list_t, element_t);
-void insert_last(list_t, element_t);
-void removep(list_t, position_t);
-void removei(list_t, int);
-```
-
-### Implementations
-    
-SIM: simply linked
-When a list is simply linked, each node in the list contains a pointer to
-the following node in the list.
-Traversal of the list is efficient only going forward
-
-DBL: doubly linked
-When a list is doubly linked, each node in the list contains a pointer to
-the following node and another pointer to the previous node, so that
-traversal of the list is efficient in both forwards and backwards.
-
-LIN: linear
-When a list is linear it has distinguishable starting and ending nodes.
-
-CIR: circular
-When a list is circular the last node points to the first node as its
-following node, making it a ring.
-
-DP: direct positioning
-With direct positiong the element pointed at is in the cell pointed at.
-
-IP: indirect positioning
-With indirect positioning the element pointed at is in the cell that the
-pointed cell points at.
-To solve some limit cases, such as accesing the first element, an empty
-node is included at the beginning of the list.
-
-NH: without head
-WH: with head
-A head is a special structure at the beginning of the list with additional
-information such as the length of the list and pointers to the first and
-last nodes.
-
 ## Stack
 
 ### Operations
@@ -123,7 +57,7 @@ pop
 
 ```
 From Meyer, OOSD
-    
+
 ADT: Stacks
 
 Types:
@@ -147,7 +81,7 @@ Preconditions:
 	remove(s : Stack[G]) requires not empty(s)
 	item(s : Stack[G]) requires not empty(s)
 ```
-    
+
 ## Linear Queue
 
 ### Operations
@@ -272,7 +206,7 @@ from s to t?", or "How many edges can I remove from this graph before some
 nodes become unreachable from other nodes?" There are standard algorithms for
 answering all of these questions; the information these algorithms need is
 typically (a) given a vertex u, what successors does it have; and sometimes (b)
-given vertices u and v, does the edge (u,v) exist in the graph? 
+given vertices u and v, does the edge (u,v) exist in the graph?
 
 /* basic directed graph type */
 
