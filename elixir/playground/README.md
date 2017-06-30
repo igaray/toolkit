@@ -1,4 +1,0 @@
-# Playground
-
-**TODO: Add description**
-
