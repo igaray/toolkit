@@ -5,6 +5,14 @@ use std::io::prelude::*;
 use std::mem;
 use std::path::Path;
 
+mod mmix {
+
+}
+
+mod nnix {
+
+}
+
 /**
 # MMIX
 */
@@ -273,7 +281,7 @@ enum Opcode {
     TRIP = 0xFF
 }
 
-fn from_u8(n: u8) -> Opcode {
+fn u8_to_op(n: u8) -> Opcode {
     unsafe { mem::transmute(n) }
 }
 
@@ -317,50 +325,49 @@ struct VM {
 impl Default for VM {
     fn default() -> VM {
         VM {
-            rA: 0,
-            rB: 0, // Bootstrap register (trip). When tripping, rB ← $255 and
-                   // $255 ← rJ, thus saving rJ in a general register.
-            rC: 0, // Cycle counter.
-            rD: 0, // Dividend register. Unsigned integer divide uses this as
+            rA: 0, // arithmetic status register
+            rB: 0, // bootstrap register (trip)
+            rC: 0, // continuation register, cycle counter
+            rD: 0, // dividend register. Unsigned integer divide uses this as
                    // the left half of the 128-bit input that is to be divided
                    // by the other operand.
-            rE: 0, // Epsilon register. Used for floating comparisons with
+            rE: 0, // epsilon register, used for floating comparisons with
                    // respect to epsilon.
-            rF: 0,
-            rG: 0,
-            rH: 0, // Himult register. Used to store the left half of the
+            rF: 0, // failure location register
+            rG: 0, // global threshold register
+            rH: 0, // himult register. Used to store the left half of the
                    // 128-bit result of unsigned integer multiplication.
             rI: 0, // interval counter
-            rJ: 0, // return-jump
-            rK: 0, // interrupt mask
-            rL: 0,
-            rM: 0, // multiplex mask
+            rJ: 0, // return-jump register
+            rK: 0, // interrupt mask register
+            rL: 0, // local threshold register
+            rM: 0, // multiplex mask register
             rN: 0, // serial number
             rO: 0, // register stack offset
-            rP: 0,
-            rQ: 0,
-            rR: 0, // remainder
+            rP: 0, // prediction register
+            rQ: 0, // interrupt request register
+            rR: 0, // remainder register
             rS: 0, // register stack pointer
-            rT: 0, // trap address
-            rU: 0,
-            rV: 0,
-            rW: 0,
-            rX: 0,
-            rY: 0,
-            rZ: 0,
-            rBB: 0, // bootstrap (trap)
-            rTT: 0, // dynamic trap address
-            rWW: 0,
-            rXX: 0,
-            rYY: 0,
-            rZZ: 0,
-            r: [0u64; 256],
-            memory: [0u64; 1048576]
+            rT: 0, // trap address register
+            rU: 0, // usage counter
+            rV: 0, // virtual translation register
+            rW: 0, // where-interrupted register
+            rX: 0, // execution register
+            rY: 0, // y operand
+            rZ: 0, // z operand
+            rBB: 0, // bootstrap (trap) register
+            rTT: 0, // dynamic trap address register
+            rWW: 0, // where-interrupted register
+            rXX: 0, // execution register
+            rYY: 0, // y operand
+            rZZ: 0, // z operand
+            r: [0u64; 256], // general purpose registers
+            memory: [0u64; 1048576] // memory
         }
     }
 }
 
-fn trap(config: &Config) {
+fn trap(config: &Config, vm: &mut VM) {
     if config.debug { println!("opcode: TRAP"); }
     panic!("opcode not implemented: TRAP");
 }
@@ -1681,35 +1688,28 @@ fn code_file(config: &Config) -> File {
 fn main() {
     let config = config();
     let mut file = code_file(&config);
-
-    let mut vm: VM;
-    // let mut word: u32;
-    let mut opcode: u8;
-    // let mut opX: u8;
-    // let mut opY: u8;
-    // let mut opZ: u8;
-    // let mut opYZ: u16;
-    // let mut opXYZ: u32;
+    let mut buf: [u8; 8] = [0; 8];
+    let mut vm: VM = Default::default();
+    let mut op: u8;
 
     loop {
         // fetch
-        let mut buf: [u8; 8] = [0; 8];
         match file.read(&mut buf) {
             Err(why) =>
                 {
                     panic!("couldn't read from file: {}", why.description());
                 }
-            Ok(uz) =>
+            Ok(size) =>
                 {
-                    println!("file read successfully: {} bytes", uz);
+                    println!("file read successfully: {} bytes", size);
                 }
         }
 
         // decode & execute
-        opcode = buf[0];
-        match from_u8(opcode) {
+        op = buf[0];
+        match u8_to_op(op) {
             Opcode::TRAP => {
-                trap(&config);
+                trap(&config, &mut vm);
             }
             Opcode::FCMP => {
                 fcmp(&config);
