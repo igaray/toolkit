@@ -1,0 +1,9 @@
+[package]
+name = "photo_sort"
+version = "0.1.0"
+authors = ["Iñaki Garay <igarai@gmail.com>"]
+
+[dependencies]
+clap = "2.27.1"
+lazy_static = "0.2.9"
+regex = "0.2"
