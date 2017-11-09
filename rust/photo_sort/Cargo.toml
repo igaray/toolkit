@@ -7,3 +7,4 @@ authors = ["Iñaki Garay <igarai@gmail.com>"]
 clap = "2.27.1"
 lazy_static = "0.2.9"
 regex = "0.2"
+walkdir = "2.0.1"
