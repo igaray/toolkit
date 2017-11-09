@@ -1,4 +1,6 @@
 /* TODO
+ * - move getting workdir into aux function
+ * - handle io errors correctly in visit_dirs
  * - implement interactive mode
  * - implement undo script
  */
@@ -34,6 +36,12 @@ fn main() {
         .short("y")
         .long("yes")
         .help("Non interactive mode which assumes yes for all inputs.");
+    let silent_arg = Arg::with_name("silent")
+        .required(false)
+        .takes_value(false)
+        .short("s")
+        .long("silent")
+        .help("Silent running with no output.");
     let undo_arg = Arg::with_name("undo")
         .required(false)
         .takes_value(false)
@@ -47,10 +55,11 @@ fn main() {
         .arg(path_arg)
         .arg(dry_run_arg)
         .arg(yes_arg)
+        .arg(silent_arg)
         .arg(undo_arg)
         .get_matches();
 
-    let workdir;
+    let workdir: &path::Path;
     if args.is_present("path") {
         workdir = path::Path::new(args.value_of("path").unwrap());
     }
@@ -64,24 +73,30 @@ fn main() {
     visit_dirs(workdir, &cb).unwrap();
 
     if !args.is_present("dry-run") && args.is_present("undo") {
-        println!("Creating undo script.");
+        if !args.is_present("silent") {
+            println!("Creating undo script.");
+        }
     }
 }
 
 fn process_entry(args: &clap::ArgMatches, workdir: &path::Path, file_path: &path::Path) {
-    match destination(&file_path) {
+    match destination(&workdir, &file_path) {
         Some(destination) => {
-            match create_directory(&args, &workdir, &destination) {
+            match create_directory(&args, &destination) {
                 Ok(_) => {
-                    match move_file(&args, &file_path, &workdir, &destination) {
+                    match move_file(&args, &file_path, &destination) {
                         Ok(_) => {}
                         Err(reason) => {
-                            println!("Error moving file {:?}, reason: {:?}", file_path, reason);
+                            if !args.is_present("silent") {
+                                println!("Error moving file {:?}, reason: {:?}", file_path, reason);
+                            }
                         }
                     }
                 },
                 Err(reason) => {
-                    println!("Unable to create directory {:?}, reason: {:?}", destination, reason);
+                    if !args.is_present("silent") {
+                        println!("Unable to create directory {:?}, reason: {:?}", destination, reason);
+                    }
                 }
             }
         },
@@ -104,13 +119,14 @@ fn visit_dirs(dir: &path::Path, cb: &Fn(&std::fs::DirEntry)) -> io::Result<()> {
     Ok(())
 }
 
-fn destination(file: &path::Path) -> option::Option<path::PathBuf> {
-    match file.to_str() {
+fn destination(base_dir: &path::Path, file_name: &path::Path) -> option::Option<path::PathBuf> {
+    match file_name.to_str() {
         Some(filename) => {
             match date(filename) {
                 Some((year, month, day)) => {
                     let dir = format!("{}-{}-{}", year, month, day);
                     let mut dest = path::PathBuf::new();
+                    dest.push(base_dir);
                     dest.push(dir);
                     Some(dest)
                 },
@@ -124,7 +140,7 @@ fn destination(file: &path::Path) -> option::Option<path::PathBuf> {
 fn date(filename: &str) -> Option<(&str, &str, &str)> {
 
     lazy_static! {
-        static ref RE: Regex = Regex::new(r".*(20[01][0-9]).?([01][0-9]).?([0123][0-9]).*").unwrap();
+        static ref RE: Regex = Regex::new(r"/D*(20[01][0-9]).?([01][0-9]).?([0123][0-9])\D*").unwrap();
     }
 
     if RE.is_match(filename) {
@@ -144,12 +160,10 @@ fn date(filename: &str) -> Option<(&str, &str, &str)> {
     }
 }
 
-fn create_directory(args: &clap::ArgMatches, base_path: &path::Path, directory: &path::Path) -> io::Result<()> {
-    let mut full_path = path::PathBuf::new();
-    full_path.push(base_path);
-    full_path.push(directory);
-
+fn create_directory(args: &clap::ArgMatches, directory: &path::Path) -> io::Result<()> {
     if !args.is_present("dry-run") {
+        let mut full_path = path::PathBuf::new();
+        full_path.push(directory);
         match fs::create_dir(full_path) {
             Ok(_) => {
                 Ok(())
@@ -160,7 +174,9 @@ fn create_directory(args: &clap::ArgMatches, base_path: &path::Path, directory: 
                         Ok(())
                     },
                     _ => {
-                        println!("directory could not be created: {:?}", reason.kind());
+                        if !args.is_present("silent") {
+                            println!("Error: directory could not be created: {:?}", reason.kind());
+                        }
                         Err(reason)
                     }
                 }
@@ -172,22 +188,29 @@ fn create_directory(args: &clap::ArgMatches, base_path: &path::Path, directory: 
     }
 }
 
-fn move_file(args: &clap::ArgMatches, from: &path::Path, base_dir: &path::Path, dest_dir: &path::Path) -> io::Result<()> {
+fn move_file(args: &clap::ArgMatches, from: &path::Path, dest: &path::Path) -> io::Result<()> {
     let mut to = path::PathBuf::new();
-    to.push(base_dir);
-    to.push(dest_dir);
+    to.push(dest);
     to.push(from.file_name().unwrap());
-    println!("{:?} => {:?}", from, to);
+
+    if !args.is_present("silent") {
+        println!("{:?} => {:?}", from, to)
+    }
+
     if !args.is_present("dry-run") {
         match fs::rename(from, to) {
             Ok(_) => {
                 if args.is_present("undo") {
-                    println!("Saving undo information.");
+                    if !args.is_present("silent") {
+                        println!("Saving undo information.");
+                    }
                 }
                 Ok(())
             },
             Err(reason) => {
-                println!("file {:?} could not be renamed: {:?}", from, reason);
+                if !args.is_present("silent") {
+                    println!("Error: file {:?} could not be renamed: {:?}", from, reason);
+                }
                 Err(reason)
             },
         }
