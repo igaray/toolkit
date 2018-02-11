@@ -4,3 +4,8 @@ version = "0.1.0"
 authors = ["Iñaki Garay <igarai@gmail.com>"]
 
 [dependencies]
+env_logger = "0.5.3"
+log = "0.4.1"
+toml = "0.4"
+rand = "0.4"
+

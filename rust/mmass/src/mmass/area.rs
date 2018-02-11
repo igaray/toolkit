@@ -1,0 +1,4 @@
+// Areas
+pub struct Area {
+}
+
