@@ -2,12 +2,14 @@
 pub struct Scenario {
 }
 
-pub fn new() -> Scenario {
-  return Scenario{}
-}
+impl Scenario {
+  pub fn new() -> Scenario {
+    return Scenario{}
+  }
 
-pub fn load() -> Scenario {
-  let scenario = new();
-  return scenario
+  pub fn load(&self) -> Scenario {
+    let scenario = new();
+    return scenario
+  }
 }
 

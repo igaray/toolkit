@@ -1,10 +1,8 @@
 // Percepts
-mod percept {
-  pub enum PerceptKind {
-  }
+pub enum PerceptKind {
+}
 
-  pub struct Percept {
-    kind: PerceptKind
-  }
+pub struct Percept {
+  kind: PerceptKind
 }
 
