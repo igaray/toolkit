@@ -1,6 +1,0 @@
-[package]
-name = "string_examples"
-version = "0.1.0"
-authors = ["Iñaki Garay <igarai@gmail.com>"]
-
-[dependencies]
