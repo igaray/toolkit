@@ -1,3 +1,5 @@
+extern crate toml;
+
 // Scenario Configuration
 pub struct Scenario {
 }
@@ -7,9 +9,7 @@ impl Scenario {
     return Scenario{}
   }
 
-  pub fn load(&self) -> Scenario {
-    let scenario = new();
-    return scenario
+  pub fn load(&self) {
   }
 }
 

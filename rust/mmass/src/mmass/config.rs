@@ -4,12 +4,12 @@ extern crate toml;
 pub struct Config {
 }
 
-pub fn new() -> Config {
-  return Config{}
-}
+impl Config {
+  pub fn new() -> Config {
+    return Config{}
+  }
 
-pub fn load() -> Config {
-  let config = new();
-  return config
+  pub fn load(&self) {
+  }
 }
 
