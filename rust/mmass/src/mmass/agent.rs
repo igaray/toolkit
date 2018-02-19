@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+extern crate rand;
+
 // Agents
 pub enum AgentKind {
   Joystick,
@@ -13,30 +16,31 @@ pub struct Agent {
 }
 
 impl Agent {
-  pub fn new() -> Agent {
-    return Agent{id: 0, kind: AgentKind::Joystick}
+  pub fn new(kind: AgentKind) -> Agent {
+    let id = rand::random::<u64>();
+    return Agent{id: id, kind: kind}
   }
 }
 
 pub struct Agents {
-  _data: Vec<Agent>
+  _data: HashMap<u64, Agent>
 }
 
 impl Agents {
   pub fn new() -> Agents {
-    return Agents{_data: Vec::new()}
+    return Agents{_data: HashMap::new()}
   }
 
-  pub fn add(agent: Agent) -> Result<(), ()> {
-    return Ok(())
+  pub fn add(&mut self, agent: Agent) {
+    self._data.insert(agent.id, agent);
   }
 
-  pub fn remove(id: u64) -> Result<(), ()> {
-    return Ok(())
+  pub fn remove(&mut self, id: u64) {
+    self._data.remove(&id);
   }
 
-  pub fn find(id: u64) -> Result<Agent, ()> {
-    let agent = Agent{id: 0, kind: AgentKind::Joystick};
-    return Ok(agent)
+  pub fn find(&self, id: u64) -> Option<&Agent> {
+    let res = self._data.get(&id);
+    return res
   }
 }
