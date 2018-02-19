@@ -1,11 +1,12 @@
 # TODO
 
 [x] add logging
-[ ] collections interfaces
-[ ] config loading
-[ ] scenario loading
 [x] random id generation
-[ ] initialization to all structs
+[x] repl
+[ ] config & loading
+[ ] setting global and local env kind through scenario
+[ ] collections
+[ ] initialization of all structs
 [ ] world gen
 [ ] engine fsm
-
+[ ] threads

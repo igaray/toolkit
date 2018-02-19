@@ -9,7 +9,7 @@ pub enum ActionKind {
 
 pub struct Action {
   id: u64,
-  kind: ActionKind
+  pub kind: ActionKind
 }
 
 impl Action {
