@@ -5,6 +5,8 @@ use mmass::object as object;
 use mmass::agent as agent;
 use mmass::order as order;
 
+#[derive(Debug)]
+#[derive(Deserialize)]
 pub enum LocalEnvKind {
   SquareGrid,
   HexGrid,

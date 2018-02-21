@@ -22,7 +22,7 @@ pub fn new(config: config::Config, scenario: scenario::Scenario) -> Engine {
     config: config,
     scenario: scenario,
     state: EngineState::Init,
-    global_env: global_env::new(),
+    global_env: global_env::new(global_env::GlobalEnvKind::SquareGrid),
     local_envs: Vec::new()
     }
 }

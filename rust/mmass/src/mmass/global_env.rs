@@ -1,4 +1,7 @@
 // Global Environment
+
+#[derive(Debug)]
+#[derive(Deserialize)]
 pub enum GlobalEnvKind {
   SquareGrid,
   HexGrid,
@@ -30,9 +33,9 @@ pub struct GlobalEnv {
   map: GlobalMap
 }
 
-pub fn new() -> GlobalEnv {
+pub fn new(kind: GlobalEnvKind) -> GlobalEnv {
   return GlobalEnv{
-    kind: GlobalEnvKind::SquareGrid,
+    kind: kind,
     map: GlobalMap{
       square_grid: Option::Some(GlobalMapSquareGrid{}),
       hex_grid: Option::None,

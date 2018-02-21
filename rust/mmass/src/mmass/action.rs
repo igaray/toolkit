@@ -1,3 +1,5 @@
+extern crate rand;
+
 use std::collections::HashMap;
 
 // Actions
@@ -13,7 +15,8 @@ pub struct Action {
 }
 
 impl Action {
-  pub fn new(id: u64, kind: ActionKind) -> Action {
+  pub fn new(kind: ActionKind) -> Action {
+    let id = rand::random::<u64>();
     let action = Action{id: id, kind: kind};
     return action
   }
@@ -36,8 +39,8 @@ impl Actions {
     self._data.remove(&id);
   }
 
-  pub fn find(&self, id: u64) -> Option<&Action> {
-    let res = self._data.get(&id);
+  pub fn find(&mut self, id: u64) -> Option<&mut Action> {
+    let res = self._data.get_mut(&id);
     return res
   }
 }

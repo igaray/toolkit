@@ -2,15 +2,19 @@
 extern crate log;
 extern crate env_logger;
 extern crate rand;
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
 
 mod mmass;
 
 fn main() {
   env_logger::init();
 
+  /*
   let mut actions = mmass::action::Actions::new();
-  let mut a1 = mmass::action::Action::new(1, mmass::action::ActionKind::Noop);
-  let a2 = mmass::action::Action::new(2, mmass::action::ActionKind::Noop);
+  let mut a1 = mmass::action::Action::new(mmass::action::ActionKind::Noop);
+  let a2 = mmass::action::Action::new(mmass::action::ActionKind::Noop);
 
   // the add copies the action struct into the actions store
   actions.add(a1);
@@ -28,13 +32,10 @@ fn main() {
 
   let i = rand::random::<u64>();
   println!("random i64: {:?}", i);
+  */
 
   let config = mmass::config::Config::new();
-  config.load();
-
   let scenario = mmass::scenario::Scenario::new();
-  scenario.load();
-
   let engine = mmass::engine::new(config, scenario);
 
   mmass::repl::run();

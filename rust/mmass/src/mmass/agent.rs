@@ -1,5 +1,6 @@
-use std::collections::HashMap;
 extern crate rand;
+
+use std::collections::HashMap;
 
 // Agents
 pub enum AgentKind {
@@ -39,8 +40,8 @@ impl Agents {
     self._data.remove(&id);
   }
 
-  pub fn find(&self, id: u64) -> Option<&Agent> {
-    let res = self._data.get(&id);
+  pub fn find(&mut self, id: u64) -> Option<&mut Agent> {
+    let res = self._data.get_mut(&id);
     return res
   }
 }
