@@ -6,7 +6,19 @@
 [x] config & loading
 [x] setting global and local env kind through scenario
 [ ] collections
-[ ] initialization of all structs
-[ ] world gen
+  [x] agents
+  [x] actions
+  [x] percepts
+  [ ] areas
+  [ ] events
+  [ ] objects
+  [ ] orders
+[ ] data definitions
+[ ] engine thread
 [ ] engine fsm
-[ ] threads
+[ ] trivial world gen
+[ ] start
+[ ] pause
+[ ] step
+[ ] save
+[ ] load

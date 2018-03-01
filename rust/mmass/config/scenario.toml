@@ -1,2 +1,9 @@
+[[scenarios]]
+name = "default"
 global_env_kind = "SquareGrid"
 local_env_kind = "SquareGrid"
+
+[[scenarios]]
+name = "advanced"
+global_env_kind = "GeodesicGrid"
+local_env_kind = "VoxelGrid"

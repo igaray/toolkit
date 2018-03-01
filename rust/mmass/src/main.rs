@@ -35,9 +35,8 @@ fn main() {
   */
 
   let config = mmass::config::Config::new();
-  let scenario = mmass::scenario::Scenario::new();
-  let engine = mmass::engine::new(config, scenario);
-
-  mmass::repl::run();
+  let scenario_config = mmass::scenario::Scenario::new();
+  let mut repl = mmass::repl::Repl::new(config, scenario_config);
+  repl.run();
   error!("| error: program incomplete");
 }

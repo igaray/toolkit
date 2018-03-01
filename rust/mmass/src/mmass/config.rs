@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 use std::io::Read;
-use std::path;
 use toml;
 
 // Engine Configuration
@@ -20,8 +19,7 @@ impl Config {
     let mut config_file_content = String::new();
     config_file.read_to_string(&mut config_file_content).unwrap();
 
-    let mut config: Config  = toml::from_str(config_file_content.as_str()).unwrap();
-    println!("config: {:?}", config);
+    let config: Config  = toml::from_str(config_file_content.as_str()).unwrap();
     return config
   }
 }

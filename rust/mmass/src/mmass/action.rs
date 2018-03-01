@@ -1,46 +1,46 @@
-extern crate rand;
-
 use std::collections::HashMap;
+use rand;
 
 // Actions
 pub enum ActionKind {
   Noop,
   Move,
-  Reaction
+  Reaction,
 }
 
 pub struct Action {
-  id: u64,
-  pub kind: ActionKind
+  pub id: u64,
+  pub kind: ActionKind,
+  pub params: HashMap<String, String>,
 }
 
 impl Action {
   pub fn new(kind: ActionKind) -> Action {
     let id = rand::random::<u64>();
-    let action = Action{id: id, kind: kind};
+    let action = Action{id: id, kind: kind, params: HashMap::new()};
     return action
   }
 }
 
 pub struct Actions {
-  _data: HashMap<u64, Action>
+  data: HashMap<u64, Action>
 }
 
 impl Actions {
   pub fn new() -> Actions {
-    return Actions{_data: HashMap::new()}
+    return Actions{data: HashMap::new()}
   }
 
   pub fn add(&mut self, action: Action) {
-    self._data.insert(action.id, action);
+    self.data.insert(action.id, action);
   }
 
   pub fn remove(&mut self, id: u64) {
-    self._data.remove(&id);
+    self.data.remove(&id);
   }
 
-  pub fn find(&mut self, id: u64) -> Option<&mut Action> {
-    let res = self._data.get_mut(&id);
+  pub fn get(&mut self, id: u64) -> Option<&mut Action> {
+    let res = self.data.get_mut(&id);
     return res
   }
 }

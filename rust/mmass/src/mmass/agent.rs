@@ -1,47 +1,95 @@
-extern crate rand;
-
 use std::collections::HashMap;
+use rand;
 
 // Agents
+
+#[derive(Debug)]
+pub struct JoystickAgent {
+  id: u64,
+}
+
+#[derive(Debug)]
+pub struct ReactiveAgent {
+  id: u64,
+}
+
+#[derive(Debug)]
+pub struct BDIAgent {
+  id: u64,
+}
+
+#[derive(Debug)]
+pub struct StrategicAgent {
+  id: u64,
+}
+
+#[derive(Debug, Deserialize)]
 pub enum AgentKind {
   Joystick,
   Reactive,
-  StateBased,
   BDI,
-  Strategic
+  Strategic,
 }
 
-pub struct Agent {
-  kind: AgentKind,
-  id: u64
+#[derive(Debug)]
+pub enum Agent {
+  Joystick(JoystickAgent),
+  Reactive(ReactiveAgent),
+  BDI(BDIAgent),
+  Strategic(StrategicAgent),
 }
 
 impl Agent {
   pub fn new(kind: AgentKind) -> Agent {
     let id = rand::random::<u64>();
-    return Agent{id: id, kind: kind}
+    match kind {
+      AgentKind::Joystick => {
+          return Agent::Joystick(JoystickAgent{id: id})
+        },
+      AgentKind::Reactive => {
+          return Agent::Reactive(ReactiveAgent{id: id})
+        },
+      AgentKind::BDI => {
+          return Agent::BDI(BDIAgent{id: id})
+        },
+      AgentKind::Strategic => {
+          return Agent::Strategic(StrategicAgent{id: id})
+        },
+    }
   }
 }
 
 pub struct Agents {
-  _data: HashMap<u64, Agent>
+  data: HashMap<u64, Agent>
 }
 
 impl Agents {
   pub fn new() -> Agents {
-    return Agents{_data: HashMap::new()}
+    return Agents{data: HashMap::new()}
   }
 
-  pub fn add(&mut self, agent: Agent) {
-    self._data.insert(agent.id, agent);
+  pub fn add(&mut self, _agent: Agent) {
+    /*
+    match &agent {
+      &Agent::Joystick(ref a) => {
+          let id = a.id;
+          self.data.insert(id, agent);
+        },
+      &Agent::Reactive(_) => { unimplemented!(); },
+      &Agent::BDI(_) => { unimplemented!(); },
+      &Agent::Strategic(_) => { unimplemented!(); },
+    };
+    */
+    unimplemented!();
   }
 
   pub fn remove(&mut self, id: u64) {
-    self._data.remove(&id);
+    self.data.remove(&id);
   }
 
-  pub fn find(&mut self, id: u64) -> Option<&mut Agent> {
-    let res = self._data.get_mut(&id);
+  pub fn get(&mut self, id: u64) -> Option<&mut Agent> {
+    let res = self.data.get_mut(&id);
     return res
   }
 }
+
