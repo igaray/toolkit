@@ -4,7 +4,7 @@ extern crate env_logger;
 extern crate rand;
 #[macro_use]
 extern crate serde_derive;
-extern crate toml;
+extern crate serde_yaml;
 
 mod mmass;
 
@@ -36,7 +36,12 @@ fn main() {
 
   let config = mmass::config::Config::new();
   let scenario_config = mmass::scenario::Scenario::new();
-  let mut repl = mmass::repl::Repl::new(config, scenario_config);
+
+  let mut engine = mmass::engine::Engine::new(config, scenario_config);
+  engine.run();
+
+  let mut repl = mmass::repl::Repl::new();
   repl.run();
+
   error!("| error: program incomplete");
 }

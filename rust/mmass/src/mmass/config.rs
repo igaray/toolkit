@@ -1,11 +1,10 @@
 use std::env;
 use std::fs;
 use std::io::Read;
-use toml;
+use serde_yaml;
 
 // Engine Configuration
-#[derive(Deserialize)]
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
   debug: bool
 }
@@ -13,13 +12,13 @@ pub struct Config {
 impl Config {
   pub fn new() -> Config {
     let mut config_path = env::current_dir().unwrap();
-    config_path.push("config/config.toml");
+    config_path.push("config/config.yaml");
 
     let mut config_file = fs::File::open(config_path).unwrap();
     let mut config_file_content = String::new();
     config_file.read_to_string(&mut config_file_content).unwrap();
 
-    let config: Config  = toml::from_str(config_file_content.as_str()).unwrap();
+    let config: Config  = serde_yaml::from_str(config_file_content.as_str()).unwrap();
     return config
   }
 }

@@ -1,0 +1,15 @@
+---
+scenarios:
+  - name: basic
+    global_env_kind: SquareGrid
+    local_env_kind: SquareGrid
+    starting_units:
+      - name: AgentOne
+      - name: AgentTwo
+      - name: AgentThree
+  - name: dwarf_fortress
+    global_env_kind: SquareGrid
+    local_env_kind: VoxelGrid
+  - name: advanced
+    global_env_kind: GeodesicGrid
+    local_env_kind: VoxelGrid

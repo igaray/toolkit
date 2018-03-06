@@ -2,44 +2,40 @@
 use mmass::agent as agent;
 use mmass::percept as percept;
 use mmass::action as action;
-use mmass::object as object;
-use mmass::order as order;
-use mmass::area as area;
-use mmass::event as event;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum Material {
   Earth,
   Air,
   Water
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Cell {
   material: Material
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalMapSquareGrid {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalMapHexGrid {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalMapVoxelGrid {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalMapGraph {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalMapFree {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum LocalEnvMap {
   SquareGrid(LocalMapSquareGrid),
   HexGrid(LocalMapHexGrid),
@@ -48,7 +44,7 @@ pub enum LocalEnvMap {
   Free(LocalMapFree),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum LocalEnvMapKind {
   SquareGrid,
   HexGrid,
@@ -57,15 +53,12 @@ pub enum LocalEnvMapKind {
   Free,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LocalEnv {
   map: LocalEnvMap,
   agents: agent::Agents,
   percepts: percept::Percepts,
   actions: action::Actions,
-  objects: object::Objects,
-  orders: order::Orders,
-  areas: area::Areas,
-  events: event::Events,
 }
 
 pub fn new(map: LocalEnvMap) -> LocalEnv {
@@ -74,10 +67,6 @@ pub fn new(map: LocalEnvMap) -> LocalEnv {
     agents: agent::Agents::new(),
     percepts: percept::Percepts::new(),
     actions: action::Actions::new(),
-    objects: object::Objects::new(),
-    orders: order::Orders::new(),
-    areas: area::Areas::new(),
-    events: event::Events::new(),
   };
   return local_env
 }

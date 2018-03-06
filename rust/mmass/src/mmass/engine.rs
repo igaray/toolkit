@@ -11,19 +11,35 @@ enum EngineState {
 
 pub struct Engine {
   config: config::Config,
-  scenario: scenario::Scenario,
+  scenario: scenario::ScenarioConfig,
   state: EngineState,
   global_env: global_env::GlobalEnv,
   local_envs: Vec<local_env::LocalEnv>
 }
 
-pub fn new(config: config::Config, scenario: scenario::Scenario) -> Engine {
-  return Engine{
-    config: config,
-    scenario: scenario,
-    state: EngineState::Init,
-    global_env: global_env::new(global_env::GlobalEnvKind::SquareGrid),
-    local_envs: Vec::new()
+impl Engine {
+  pub fn new(config: config::Config, scenario: scenario::ScenarioConfig) -> Engine {
+    return Engine{
+      config: config,
+      scenario: scenario,
+      state: EngineState::Init,
+      global_env: global_env::new(global_env::GlobalEnvKind::SquareGrid),
+      local_envs: Vec::new()
+      }
+  }
+
+  pub fn run(&mut self) {
+    loop {
+      match self.state {
+        EngineState::Init => {
+          self.state = EngineState::Final;
+        }
+        EngineState::Final => {
+          break;
+        }
+      }
     }
+  }
 }
+
 

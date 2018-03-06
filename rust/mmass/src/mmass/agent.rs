@@ -3,27 +3,27 @@ use rand;
 
 // Agents
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct JoystickAgent {
   id: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ReactiveAgent {
   id: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BDIAgent {
   id: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct StrategicAgent {
   id: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum AgentKind {
   Joystick,
   Reactive,
@@ -31,7 +31,7 @@ pub enum AgentKind {
   Strategic,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum Agent {
   Joystick(JoystickAgent),
   Reactive(ReactiveAgent),
@@ -59,6 +59,7 @@ impl Agent {
   }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Agents {
   data: HashMap<u64, Agent>
 }
@@ -66,30 +67,6 @@ pub struct Agents {
 impl Agents {
   pub fn new() -> Agents {
     return Agents{data: HashMap::new()}
-  }
-
-  pub fn add(&mut self, _agent: Agent) {
-    /*
-    match &agent {
-      &Agent::Joystick(ref a) => {
-          let id = a.id;
-          self.data.insert(id, agent);
-        },
-      &Agent::Reactive(_) => { unimplemented!(); },
-      &Agent::BDI(_) => { unimplemented!(); },
-      &Agent::Strategic(_) => { unimplemented!(); },
-    };
-    */
-    unimplemented!();
-  }
-
-  pub fn remove(&mut self, id: u64) {
-    self.data.remove(&id);
-  }
-
-  pub fn get(&mut self, id: u64) -> Option<&mut Agent> {
-    let res = self.data.get_mut(&id);
-    return res
   }
 }
 

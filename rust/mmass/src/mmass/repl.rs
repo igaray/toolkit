@@ -5,29 +5,21 @@ use std::collections::HashMap;
 
 use mmass;
 
-pub enum ReplCommandKind {
+pub enum ReplCommand {
   Quit,
-  Start,
-  WorldGen,
-  Inspect
-}
-
-pub struct ReplCommand{
-  pub kind: ReplCommandKind,
-  pub params: HashMap<String, String>,
+  Help,
+  Start {params: HashMap<String, String>},
+  WorldGen {params: HashMap<String, String>},
+  Inspect {params: HashMap<String, String>},
 }
 
 pub struct Repl {
-  config: mmass::config::Config,
-  scenario_config: mmass::scenario::ScenarioConfig,
   command_history: Vec<ReplCommand>,
 }
 
 impl Repl {
-  pub fn new(config: mmass::config::Config, scenario_config: mmass::scenario::ScenarioConfig) -> Repl {
+  pub fn new() -> Repl {
     let repl = Repl{
-      config: config,
-      scenario_config: scenario_config,
       command_history: Vec::new(),
       };
     return repl
@@ -38,8 +30,8 @@ impl Repl {
       let input = Repl::prompt();
       match Repl::parse(input) {
         Ok(command) => {
-          match command.kind {
-            ReplCommandKind::Quit => {
+          match command {
+            ReplCommand::Quit => {
               break;
             },
             _ => {
@@ -59,9 +51,9 @@ impl Repl {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     print!("> ");
-    stdout.flush().expect("Error flushing stdout");
+    stdout.flush().expect("Error flushing stdout.");
     let mut input = String::new();
-    stdin.lock().read_line(&mut input).expect("Error reading from stdin");
+    stdin.lock().read_line(&mut input).expect("Error reading from stdin.");
     return input
   }
 
@@ -70,16 +62,19 @@ impl Repl {
     let params = HashMap::new();
     match tokens[0] {
       "quit" => {
-          return Ok(ReplCommand{kind: ReplCommandKind::Quit, params: params})
+          return Ok(ReplCommand::Quit)
+        },
+      "help" => {
+          return Ok(ReplCommand::Help)
         },
       "start" => {
-          return Ok(ReplCommand{kind: ReplCommandKind::Start, params: params})
+          return Ok(ReplCommand::Start{ params: params })
         },
       "worldgen" => {
-          return Ok(ReplCommand{kind: ReplCommandKind::WorldGen, params: params})
+          return Ok(ReplCommand::WorldGen{ params: params })
         },
       "inspect" => {
-          return Ok(ReplCommand{kind: ReplCommandKind::Inspect, params: params})
+          return Ok(ReplCommand::Inspect{ params: params })
         },
       _ => {
           return Err(String::from("Unknown command."))
@@ -88,17 +83,25 @@ impl Repl {
   }
 
   fn execute_command(&mut self, command: &ReplCommand) {
-    match command.kind {
-      ReplCommandKind::Quit => {
+    match command {
+      &ReplCommand::Quit => {
         // Quit has no implementation because we can never reach here.
       },
-      ReplCommandKind::Start => {
+      &ReplCommand::Help => {
+        println!("Commands:");
+        println!("    quit");
+        println!("    help");
+        println!("    start");
+        println!("    worldgen");
+        println!("    inspect");
+      },
+      &ReplCommand::Start{ .. } => {
         println!("Starting...");
       },
-      ReplCommandKind::WorldGen => {
+      &ReplCommand::WorldGen{ .. }  => {
         println!("Generating world...");
       },
-      ReplCommandKind::Inspect => {
+      &ReplCommand::Inspect{ .. } => {
         println!("Inspecting...");
       },
     }

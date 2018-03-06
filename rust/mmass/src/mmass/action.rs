@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 use rand;
 
-// Actions
+#[derive(Debug, Deserialize, Serialize)]
 pub enum ActionKind {
   Noop,
   Move,
   Reaction,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Action {
   pub id: u64,
   pub kind: ActionKind,
@@ -22,6 +23,7 @@ impl Action {
   }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Actions {
   data: HashMap<u64, Action>
 }
@@ -29,19 +31,6 @@ pub struct Actions {
 impl Actions {
   pub fn new() -> Actions {
     return Actions{data: HashMap::new()}
-  }
-
-  pub fn add(&mut self, action: Action) {
-    self.data.insert(action.id, action);
-  }
-
-  pub fn remove(&mut self, id: u64) {
-    self.data.remove(&id);
-  }
-
-  pub fn get(&mut self, id: u64) -> Option<&mut Action> {
-    let res = self.data.get_mut(&id);
-    return res
   }
 }
 

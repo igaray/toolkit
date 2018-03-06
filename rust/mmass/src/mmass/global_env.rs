@@ -1,7 +1,6 @@
 // Global Environment
 
-#[derive(Debug)]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum GlobalEnvKind {
   SquareGrid,
   HexGrid,
@@ -9,18 +8,23 @@ pub enum GlobalEnvKind {
   Graph
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 struct GlobalMapSquareGrid {
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 struct GlobalMapHexGrid {
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 struct GlobalMapGeodesicGrid {
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 struct GlobalMapGraph {
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 struct GlobalMap {
   square_grid: Option<GlobalMapSquareGrid>,
   hex_grid: Option<GlobalMapSquareGrid>,
@@ -28,6 +32,7 @@ struct GlobalMap {
   graph: Option<GlobalMapGraph>
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct GlobalEnv {
   kind: GlobalEnvKind,
   map: GlobalMap
