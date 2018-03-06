@@ -3,18 +3,7 @@ extern crate clap;
 use clap::{App, Arg};
 
 mod hello_world {
-    struct MyStruct {
-        u: u64,
-        a: [u64; 256],
-        v: Vec<u64>
-    }
-    
-    impl Default for MyStruct {
-        fn default() -> MyStruct{
-            MyStruct{u: 0, a: [0; 256], v: vec![0, 1024]}
-        }
-    }
-    
+
     pub fn run() {
         // A simple integer calculator:
         // `+` or `-` means add or subtract by 1
@@ -37,10 +26,72 @@ mod hello_world {
     }
 }
 
-mod vector_examples {
+mod struct_examples {
+    #[derive(Default)]
+    struct MyStruct {
+        u: u64,
+        a: [u64; 16],
+        v: Vec<u64>
+    }
+
+    /*
+    impl Default for MyStruct {
+        fn default() -> MyStruct{
+            MyStruct{u: 0, a: [0; 16], v: vec![0, 16]}
+        }
+    }
+    */
+
     pub fn run() {
-        let mut v: Vec<i32> = vec![0; 10];
-        v[0] = 1;
+      let ms: MyStruct = Default::default();
+      println!("ms.u: {:?}", &ms.u);
+      println!("ms.a: {:?}", &ms.a);
+      println!("ms.v: {:?}", &ms.v);
+    }
+}
+
+mod vector_examples {
+    #[derive(Default)]
+    #[derive(Debug)]
+    struct Point {
+      x: i32,
+      y: i32
+    }
+
+    fn f(v: &mut Vec<Point>, i: usize, x: i32, y: i32) {
+      v[i].x = x;
+      v[i].y = y;
+    }
+
+    pub fn run() {
+        {
+            let mut v: Vec<i32> = vec![0; 10];
+            v[0] = 1;
+        }
+        {
+            let p1: Point = Default::default();
+            let p2: Point = Default::default();
+            let mut v: Vec<Point> = Vec::new();
+            v.push(p1);
+            v.push(p2);
+
+            v[0].x = 1;
+            v[0].y = 2;
+            v[1].x = 3;
+            v[1].y = 4;
+            println!("v[0]: {:?}", v[0]);
+            println!("v[1]: {:?}", v[1]);
+
+            v[0].x = 5;
+            v[0].y = 6;
+            v[1].x = 7;
+            v[1].y = 8;
+            println!("v[0]: {:?}", v[0]);
+            println!("v[1]: {:?}", v[1]);
+
+            f(&mut v, 0, 10, 11);
+            println!("v[0]: {:?}", v[0]);
+        }
     }
 }
 
@@ -126,6 +177,9 @@ fn main() {
             match command {
                 "hello" => {
                     hello_world::run();
+                },
+                "struct" => {
+                    struct_examples::run();
                 },
                 "vector" => {
                     vector_examples::run();
