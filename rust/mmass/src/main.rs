@@ -37,11 +37,11 @@ fn main() {
   let config = mmass::config::Config::new();
   let scenario_config = mmass::scenario::Scenario::new();
 
-  let mut engine = mmass::engine::Engine::new(config, scenario_config);
-  engine.run();
+  let (mut _engine_mailbox, engine_thread_handle) = mmass::engine::Engine::new(config.clone(), scenario_config.clone());
+  let (mut _repl_mailbox, repl_thread_handle) = mmass::repl::Repl::new(config.clone(), scenario_config.clone());
 
-  let mut repl = mmass::repl::Repl::new();
-  repl.run();
+  engine_thread_handle.join().unwrap();
+  repl_thread_handle.join().unwrap();
 
   error!("| error: program incomplete");
 }

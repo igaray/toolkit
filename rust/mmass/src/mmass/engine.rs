@@ -1,4 +1,9 @@
 // Engine
+use std::thread;
+use std::time::Duration;
+use std::sync;
+use std::sync::mpsc::channel;
+
 use mmass::config as config;
 use mmass::scenario as scenario;
 use mmass::global_env as global_env;
@@ -10,6 +15,7 @@ enum EngineState {
 }
 
 pub struct Engine {
+  mailbox: sync::mpsc::Receiver<u32>,
   config: config::Config,
   scenario: scenario::ScenarioConfig,
   state: EngineState,
@@ -18,23 +24,36 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn new(config: config::Config, scenario: scenario::ScenarioConfig) -> Engine {
-    return Engine{
+  pub fn new(config: config::Config, scenario: scenario::ScenarioConfig) -> (sync::mpsc::Sender<u32>, thread::JoinHandle<u32>) {
+    let (sender, receiver) = channel::<u32>();
+    let mut engine = Engine{
+      mailbox: receiver,
       config: config,
       scenario: scenario,
       state: EngineState::Init,
       global_env: global_env::new(global_env::GlobalEnvKind::SquareGrid),
       local_envs: Vec::new()
-      }
+      };
+    let handle = thread::spawn(move || { engine.run(); 0 });
+    return (sender, handle)
   }
 
   pub fn run(&mut self) {
+    let mut i = 30;
     loop {
       match self.state {
         EngineState::Init => {
-          self.state = EngineState::Final;
+          if i == 0 {
+            println!("Ëngine reached final state.");
+            self.state = EngineState::Final;
+          }
+          else {
+            thread::sleep(Duration::from_millis(500));
+            i -= 1;
+          }
         }
         EngineState::Final => {
+          println!("Ëngine exiting...");
           break;
         }
       }

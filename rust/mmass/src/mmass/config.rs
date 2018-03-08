@@ -4,7 +4,7 @@ use std::io::Read;
 use serde_yaml;
 
 // Engine Configuration
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
   debug: bool
 }

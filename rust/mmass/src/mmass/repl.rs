@@ -2,6 +2,10 @@ use std::io;
 use std::io::Write;
 use std::io::BufRead;
 use std::collections::HashMap;
+use std::thread;
+use std::sync;
+use std::sync::mpsc::channel;
+use serde_yaml;
 
 use mmass;
 
@@ -14,18 +18,26 @@ pub enum ReplCommand {
 }
 
 pub struct Repl {
+  mailbox: sync::mpsc::Receiver<u32>,
+  config: mmass::config::Config,
+  scenario_config: mmass::scenario::ScenarioConfig,
   command_history: Vec<ReplCommand>,
 }
 
 impl Repl {
-  pub fn new() -> Repl {
-    let repl = Repl{
+  pub fn new(config: mmass::config::Config, scenario_config: mmass::scenario::ScenarioConfig) -> (sync::mpsc::Sender<u32>, thread::JoinHandle<u32>) {
+    let (sender, receiver) = channel::<u32>();
+    let mut repl = Repl{
+      mailbox: receiver,
+      config: config,
+      scenario_config: scenario_config,
       command_history: Vec::new(),
       };
-    return repl
+    let handle = thread::spawn(move || { repl.run(); 0 });
+    return (sender, handle)
   }
   
-  pub fn run(&mut self) {
+  fn run(&mut self) {
     loop {
       let input = Repl::prompt();
       match Repl::parse(input) {
@@ -59,14 +71,10 @@ impl Repl {
 
   fn parse(input: String) -> Result<ReplCommand, String> {
     let tokens: Vec<&str> = input.trim().split(' ').collect();
-    let params = HashMap::new();
+    let mut params = HashMap::new();
     match tokens[0] {
-      "quit" => {
-          return Ok(ReplCommand::Quit)
-        },
-      "help" => {
-          return Ok(ReplCommand::Help)
-        },
+      "quit" => return Ok(ReplCommand::Quit),
+      "help" => return Ok(ReplCommand::Help),
       "start" => {
           return Ok(ReplCommand::Start{ params: params })
         },
@@ -74,10 +82,17 @@ impl Repl {
           return Ok(ReplCommand::WorldGen{ params: params })
         },
       "inspect" => {
-          return Ok(ReplCommand::Inspect{ params: params })
+          if 1 < tokens.len() {
+            let k = String::from("target");
+            let v = String::from(tokens[1]);
+            params.insert(k, v);
+            return Ok(ReplCommand::Inspect{ params: params })
+          } else {
+            return Err(String::from("Ërror: inspect needs a parameter."))
+          }
         },
       _ => {
-          return Err(String::from("Unknown command."))
+          return Err(String::from("Error: Unknown command."))
         }
     }
   }
@@ -93,7 +108,8 @@ impl Repl {
         println!("    help");
         println!("    start");
         println!("    worldgen");
-        println!("    inspect");
+        println!("    inspect config");
+        println!("            scenarios");
       },
       &ReplCommand::Start{ .. } => {
         println!("Starting...");
@@ -101,8 +117,20 @@ impl Repl {
       &ReplCommand::WorldGen{ .. }  => {
         println!("Generating world...");
       },
-      &ReplCommand::Inspect{ .. } => {
-        println!("Inspecting...");
+      &ReplCommand::Inspect{ params: ref p, .. } => {
+        match p["target"].as_str() {
+          "config" => {
+            let s = serde_yaml::to_string(&self.config).unwrap();
+            println!("{}", s);
+          },
+          "scenario_config" => {
+            let s = serde_yaml::to_string(&self.scenario_config).unwrap();
+            println!("{}", s);
+          },
+          &_ => {
+            println!("Error: unknown inspect target");
+          },
+        }
       },
     }
   }

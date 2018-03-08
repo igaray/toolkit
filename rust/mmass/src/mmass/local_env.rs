@@ -44,7 +44,7 @@ pub enum LocalEnvMap {
   Free(LocalMapFree),
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum LocalEnvMapKind {
   SquareGrid,
   HexGrid,

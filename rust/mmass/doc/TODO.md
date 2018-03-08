@@ -5,9 +5,10 @@
 [x] repl
 [x] config & loading
 [x] setting global and local env kind through scenario
-[ ] move config and scenario to yaml
-[ ] load agents from scenario config
-[ ] engine and repl run in separate threads
+[x] move config and scenario to yaml
+[x] load agents from scenario config
+[ ] make agent loading not require the id in the scenario config
+[x] engine and repl run in separate threads
 [ ] send commands from repl to engine
 [ ] engine fsm
 [ ] basic perceive-act loop

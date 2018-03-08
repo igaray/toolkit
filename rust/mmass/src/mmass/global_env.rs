@@ -1,6 +1,6 @@
 // Global Environment
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum GlobalEnvKind {
   SquareGrid,
   HexGrid,

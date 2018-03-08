@@ -4,9 +4,15 @@ scenarios:
     global_env_kind: SquareGrid
     local_env_kind: SquareGrid
     starting_units:
-      - name: AgentOne
-      - name: AgentTwo
-      - name: AgentThree
+      - Reactive:
+          id: 1
+          name: AgentOne
+      - Reactive:
+          id: 2
+          name: AgentTwo
+      - Reactive:
+          id: 3
+          name: AgentThree
   - name: dwarf_fortress
     global_env_kind: SquareGrid
     local_env_kind: VoxelGrid
