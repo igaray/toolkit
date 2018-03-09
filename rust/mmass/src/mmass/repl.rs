@@ -17,24 +17,34 @@ pub enum ReplCommand {
   Inspect {params: HashMap<String, String>},
 }
 
+pub enum ReplMessage {
+}
+
 pub struct Repl {
-  mailbox: sync::mpsc::Receiver<u32>,
+  repl_mailbox: sync::mpsc::Receiver<ReplMessage>,
+  engine_mailbox: sync::mpsc::Sender<mmass::engine::EngineMessage>,
   config: mmass::config::Config,
   scenario_config: mmass::scenario::ScenarioConfig,
   command_history: Vec<ReplCommand>,
 }
 
 impl Repl {
-  pub fn new(config: mmass::config::Config, scenario_config: mmass::scenario::ScenarioConfig) -> (sync::mpsc::Sender<u32>, thread::JoinHandle<u32>) {
-    let (sender, receiver) = channel::<u32>();
+  pub fn new(
+      repl_mailbox: sync::mpsc::Receiver<ReplMessage>,
+      engine_mailbox: sync::mpsc::Sender<mmass::engine::EngineMessage>,
+      config: mmass::config::Config,
+      scenario_config: mmass::scenario::ScenarioConfig,
+      ) -> thread::JoinHandle<u32>
+  {
     let mut repl = Repl{
-      mailbox: receiver,
+      repl_mailbox: repl_mailbox,
+      engine_mailbox: engine_mailbox,
       config: config,
       scenario_config: scenario_config,
       command_history: Vec::new(),
       };
     let handle = thread::spawn(move || { repl.run(); 0 });
-    return (sender, handle)
+    return handle
   }
   
   fn run(&mut self) {
@@ -44,6 +54,7 @@ impl Repl {
         Ok(command) => {
           match command {
             ReplCommand::Quit => {
+              self.execute_command(&command);
               break;
             },
             _ => {
@@ -53,7 +64,7 @@ impl Repl {
           }
         },
         Err(reason) => {
-          println!("{:?}", reason);
+          println!("{}", reason);
         }
       }
     }
@@ -100,7 +111,7 @@ impl Repl {
   fn execute_command(&mut self, command: &ReplCommand) {
     match command {
       &ReplCommand::Quit => {
-        // Quit has no implementation because we can never reach here.
+        self.engine_mailbox.send(mmass::engine::EngineMessage::MsgStop);
       },
       &ReplCommand::Help => {
         println!("Commands:");

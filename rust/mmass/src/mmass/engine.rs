@@ -4,6 +4,7 @@ use std::time::Duration;
 use std::sync;
 use std::sync::mpsc::channel;
 
+use mmass::repl as repl;
 use mmass::config as config;
 use mmass::scenario as scenario;
 use mmass::global_env as global_env;
@@ -14,8 +15,22 @@ enum EngineState {
   Final
 }
 
+/* Messages to the engine prefixed with 'Msg' do not expect a response.
+ * Messagew prefixed with 'Req' are expected to be responded by the corresponding 'Res' message.
+ */
+#[derive(Debug)]
+pub enum EngineMessage {
+  MsgStart,
+  MsgLoad,
+  MsgRun,
+  MsgPause,
+  MsgStep,
+  MsgStop
+}
+
 pub struct Engine {
-  mailbox: sync::mpsc::Receiver<u32>,
+  engine_mailbox: sync::mpsc::Receiver<EngineMessage>,
+  repl_mailbox: sync::mpsc::Sender<repl::ReplMessage>,
   config: config::Config,
   scenario: scenario::ScenarioConfig,
   state: EngineState,
@@ -24,10 +39,15 @@ pub struct Engine {
 }
 
 impl Engine {
-  pub fn new(config: config::Config, scenario: scenario::ScenarioConfig) -> (sync::mpsc::Sender<u32>, thread::JoinHandle<u32>) {
-    let (sender, receiver) = channel::<u32>();
+  pub fn new(
+      engine_mailbox: sync::mpsc::Receiver<EngineMessage>,
+      repl_mailbox: sync::mpsc::Sender<repl::ReplMessage>,
+      config: config::Config,
+      scenario: scenario::ScenarioConfig
+    ) -> thread::JoinHandle<u32> {
     let mut engine = Engine{
-      mailbox: receiver,
+      engine_mailbox: engine_mailbox,
+      repl_mailbox: repl_mailbox,
       config: config,
       scenario: scenario,
       state: EngineState::Init,
@@ -35,30 +55,33 @@ impl Engine {
       local_envs: Vec::new()
       };
     let handle = thread::spawn(move || { engine.run(); 0 });
-    return (sender, handle)
+    return handle
   }
 
   pub fn run(&mut self) {
-    let mut i = 30;
     loop {
-      match self.state {
-        EngineState::Init => {
-          if i == 0 {
-            println!("Ëngine reached final state.");
-            self.state = EngineState::Final;
-          }
-          else {
-            thread::sleep(Duration::from_millis(500));
-            i -= 1;
-          }
-        }
-        EngineState::Final => {
-          println!("Ëngine exiting...");
+      match self.engine_mailbox.try_recv() {
+        Ok(EngineMessage::MsgStop) => {
+          println!("Engine received stop signal.");
           break;
         }
+        Ok(msg) => {
+          println!("Engine received: {:?}", &msg);
+          match self.state {
+            EngineState::Init => {
+            }
+            EngineState::Final => {
+            }
+          }
+        },
+        Err(sync::mpsc::TryRecvError::Empty) => {
+        }
+        Err(sync::mpsc::TryRecvError::Disconnected) => {
+          println!("Engine receiver disconnected.");
+        }
       }
+      thread::sleep(Duration::from_millis(500));
     }
   }
 }
-
 

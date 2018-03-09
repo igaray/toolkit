@@ -8,16 +8,21 @@
 [x] move config and scenario to yaml
 [x] load agents from scenario config
 [ ] make agent loading not require the id in the scenario config
+    if the id is not present, create a new random one
 [x] engine and repl run in separate threads
-[ ] send commands from repl to engine
+[x] send commands from repl to engine
+[x] create channels in main, outside of the the functions, so that both repl and 
+    engine can have each other's senders.
+[ ] show repl command history
 [ ] engine fsm
-[ ] basic perceive-act loop
 [ ] start new sim
+[ ] basic perceive-act loop
 [ ] pause sim
 [ ] step through sim
 [ ] save current sim
 [ ] load sim
 [ ] trivial world gen
+[ ] ncurses or similar for repl, readline functionality
 
 Future work
 [ ] make joystick agent

@@ -6,6 +6,8 @@ extern crate rand;
 extern crate serde_derive;
 extern crate serde_yaml;
 
+use std::sync;
+
 mod mmass;
 
 fn main() {
@@ -37,8 +39,11 @@ fn main() {
   let config = mmass::config::Config::new();
   let scenario_config = mmass::scenario::Scenario::new();
 
-  let (mut _engine_mailbox, engine_thread_handle) = mmass::engine::Engine::new(config.clone(), scenario_config.clone());
-  let (mut _repl_mailbox, repl_thread_handle) = mmass::repl::Repl::new(config.clone(), scenario_config.clone());
+  let (repl_sender, repl_receiver) = sync::mpsc::channel::<mmass::repl::ReplMessage>();
+  let (engine_sender, engine_receiver) = sync::mpsc::channel::<mmass::engine::EngineMessage>();
+
+  let engine_thread_handle = mmass::engine::Engine::new(engine_receiver, repl_sender, config.clone(), scenario_config.clone());
+  let repl_thread_handle = mmass::repl::Repl::new(repl_receiver, engine_sender, config.clone(), scenario_config.clone());
 
   engine_thread_handle.join().unwrap();
   repl_thread_handle.join().unwrap();
