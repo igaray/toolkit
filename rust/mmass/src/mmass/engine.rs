@@ -56,7 +56,8 @@ impl Engine {
       state: EngineState::Init,
       local_env: local_env::LocalEnv::new(),
       };
-    let handle = thread::spawn(move || { engine.run(); 0 });
+    let builder = thread::Builder::new().name("Engine".into());
+    let handle = builder.spawn(move || { engine.run(); 0 }).unwrap();
     return handle
   }
 
@@ -70,7 +71,7 @@ impl Engine {
               debug!("Message: MsgQuit");
               self.state = EngineState::Final;
             },
-            EngineMessage::ReqGenerate{ ref name } => {
+            EngineMessage::ReqGenerate{ name: ref _name } => {
               debug!("Message: MsgGenerate");
               self.state = EngineState::Generating;
               // TODO execute worldgen

@@ -51,7 +51,8 @@ impl Repl {
       scenario_config: scenario_config,
       command_history: Vec::new(),
       };
-    let handle = thread::spawn(move || { repl.run(); 0 });
+    let builder = thread::Builder::new().name("REPL".into());
+    let handle = builder.spawn(move || { repl.run(); 0 }).unwrap();
     return handle
   }
   
