@@ -8,15 +8,13 @@ use mmass;
 // Scenario Configuration
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ScenarioConfig {
-  scenarios: Vec<Scenario>
+  pub scenarios: Vec<Scenario>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Scenario {
-  name: String,
-  global_env_kind: mmass::global_env::GlobalEnvKind,
-  local_env_kind: mmass::local_env::LocalEnvMapKind,
-  starting_units: Option<Vec<mmass::agent::Agent>>,
+  pub name: String,
+  pub starting_units: Option<Vec<mmass::agent::Agent>>,
 }
   
 impl Scenario {

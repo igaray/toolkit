@@ -1,17 +1,16 @@
-// Engine
 use std::thread;
-use std::time::Duration;
 use std::sync;
-use std::sync::mpsc::channel;
 
-use mmass::repl as repl;
 use mmass::config as config;
 use mmass::scenario as scenario;
-use mmass::global_env as global_env;
 use mmass::local_env as local_env;
 
+#[derive(Debug)]
 enum EngineState {
   Init,
+  Generating,
+  // Running,
+  // Paused,
   Final
 }
 
@@ -20,28 +19,32 @@ enum EngineState {
  */
 #[derive(Debug)]
 pub enum EngineMessage {
-  MsgStart,
-  MsgLoad,
+  ReqGenerate{ name: String },
+  ResGenerate,
+  MsgAccept,
+  MsgReject,
+  // MsgStart,
+  // MsgLoad,
   MsgRun,
   MsgPause,
-  MsgStep,
-  MsgStop
+  // MsgStep,
+  MsgStop,
+  MsgQuit
 }
 
 pub struct Engine {
   engine_mailbox: sync::mpsc::Receiver<EngineMessage>,
-  repl_mailbox: sync::mpsc::Sender<repl::ReplMessage>,
+  repl_mailbox: sync::mpsc::Sender<EngineMessage>,
   config: config::Config,
   scenario: scenario::ScenarioConfig,
   state: EngineState,
-  global_env: global_env::GlobalEnv,
-  local_envs: Vec<local_env::LocalEnv>
+  local_env: local_env::LocalEnv
 }
 
 impl Engine {
   pub fn new(
       engine_mailbox: sync::mpsc::Receiver<EngineMessage>,
-      repl_mailbox: sync::mpsc::Sender<repl::ReplMessage>,
+      repl_mailbox: sync::mpsc::Sender<EngineMessage>,
       config: config::Config,
       scenario: scenario::ScenarioConfig
     ) -> thread::JoinHandle<u32> {
@@ -51,8 +54,7 @@ impl Engine {
       config: config,
       scenario: scenario,
       state: EngineState::Init,
-      global_env: global_env::new(global_env::GlobalEnvKind::SquareGrid),
-      local_envs: Vec::new()
+      local_env: local_env::LocalEnv::new(),
       };
     let handle = thread::spawn(move || { engine.run(); 0 });
     return handle
@@ -60,28 +62,62 @@ impl Engine {
 
   pub fn run(&mut self) {
     loop {
-      match self.engine_mailbox.try_recv() {
-        Ok(EngineMessage::MsgStop) => {
-          println!("Engine received stop signal.");
-          break;
-        }
-        Ok(msg) => {
-          println!("Engine received: {:?}", &msg);
-          match self.state {
-            EngineState::Init => {
-            }
-            EngineState::Final => {
+      match self.state {
+        EngineState::Init => {
+          debug!("State: Init");
+          match self.engine_mailbox.recv().unwrap() {
+            EngineMessage::MsgQuit => {
+              debug!("Message: MsgQuit");
+              self.state = EngineState::Final;
+            },
+            EngineMessage::ReqGenerate{ ref name } => {
+              debug!("Message: MsgGenerate");
+              self.state = EngineState::Generating;
+              // TODO execute worldgen
+              self.repl_mailbox.send(EngineMessage::ResGenerate).unwrap();
+            },
+            _msg => {
+              error!("Unexpected message. state: {:?} msg: {:?}", self.state, _msg);
             }
           }
         },
+        EngineState::Generating => {
+          debug!("State: Generating");
+          match self.engine_mailbox.recv().unwrap() {
+            EngineMessage::MsgQuit => {
+              debug!("Message: MsgQuit.");
+              self.state = EngineState::Final;
+            },
+            EngineMessage::MsgAccept => {
+              debug!("Message: MsgAccept. Saving generated world...");
+              // TODO save generated world  
+              self.state = EngineState::Init;
+            },
+            EngineMessage::MsgReject => {
+              debug!("Message: MsgReject. Discarding generated world...");
+              // TODO discard generated world
+              self.state = EngineState::Init;
+            },
+            _msg => {
+              error!("Unexpected message. state: {:?} msg: {:?}", self.state, _msg);
+            }
+          }
+        },
+        EngineState::Final => {
+          debug!("State: Final");
+          break;
+        }
+      }
+    }
+        /*
         Err(sync::mpsc::TryRecvError::Empty) => {
+          thread::sleep(Duration::from_millis(500));
         }
         Err(sync::mpsc::TryRecvError::Disconnected) => {
           println!("Engine receiver disconnected.");
+          break;
         }
-      }
-      thread::sleep(Duration::from_millis(500));
-    }
+        */
   }
 }
 

@@ -31,15 +31,12 @@ fn main() {
     mmass::action::ActionKind::Move => { println!("Move"); },
     mmass::action::ActionKind::Reaction => { println!("Reaction"); }
   }
-
-  let i = rand::random::<u64>();
-  println!("random i64: {:?}", i);
   */
 
   let config = mmass::config::Config::new();
   let scenario_config = mmass::scenario::Scenario::new();
 
-  let (repl_sender, repl_receiver) = sync::mpsc::channel::<mmass::repl::ReplMessage>();
+  let (repl_sender, repl_receiver) = sync::mpsc::channel::<mmass::engine::EngineMessage>();
   let (engine_sender, engine_receiver) = sync::mpsc::channel::<mmass::engine::EngineMessage>();
 
   let engine_thread_handle = mmass::engine::Engine::new(engine_receiver, repl_sender, config.clone(), scenario_config.clone());
@@ -48,5 +45,5 @@ fn main() {
   engine_thread_handle.join().unwrap();
   repl_thread_handle.join().unwrap();
 
-  error!("| error: program incomplete");
+  error!("| Error: program incomplete");
 }

@@ -16,41 +16,8 @@ pub struct Cell {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct LocalMapSquareGrid {
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocalMapHexGrid {
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocalMapVoxelGrid {
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocalMapGraph {
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocalMapFree {
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum LocalEnvMap {
-  SquareGrid(LocalMapSquareGrid),
-  HexGrid(LocalMapHexGrid),
-  VoxelGrid(LocalMapVoxelGrid),
-  Graph(LocalMapGraph),
-  Free(LocalMapFree),
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum LocalEnvMapKind {
-  SquareGrid,
-  HexGrid,
-  VoxelGrid,
-  Graph,
-  Free,
+pub struct LocalEnvMap {
+  cells: Vec<Cell>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -61,13 +28,14 @@ pub struct LocalEnv {
   actions: action::Actions,
 }
 
-pub fn new(map: LocalEnvMap) -> LocalEnv {
-  let local_env = LocalEnv{
-    map: map,
-    agents: agent::Agents::new(),
-    percepts: percept::Percepts::new(),
-    actions: action::Actions::new(),
-  };
-  return local_env
+impl LocalEnv {
+  pub fn new() -> LocalEnv {
+    let local_env = LocalEnv{
+      map: LocalEnvMap{ cells: Vec::new() },
+      agents: agent::Agents::new(),
+      percepts: percept::Percepts::new(),
+      actions: action::Actions::new(),
+    };
+    return local_env
+  }
 }
-

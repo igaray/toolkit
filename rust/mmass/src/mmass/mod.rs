@@ -2,7 +2,6 @@ pub mod config;
 pub mod scenario;
 pub mod repl;
 pub mod engine;
-pub mod global_env;
 pub mod local_env;
 pub mod agent;
 pub mod percept;
