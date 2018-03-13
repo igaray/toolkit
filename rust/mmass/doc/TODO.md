@@ -14,18 +14,22 @@
 [x] create channels in main, outside of the the functions, so that both repl and 
     engine can have each other's senders.
 [x] remove globalenv and simplify localenv
-[ ] engine fsm
-[ ] start new sim
+[x] engine fsm
+[x] trivial square grid world gen
+[ ] save generated world
+[ ] list existing worlds
+[ ] start new sim in a generated world and scenario
 [ ] basic perceive-act loop with empty percepts and noop actions for all agents
 [ ] pause sim
 [ ] step through sim
 [ ] save current sim
+[ ] list existing savefiles
 [ ] load sim
-[ ] trivial square grid world gen
+[ ] write documentation in help command for all other commands
+[ ] make joystick agent
 
 Future work
 [ ] show repl command history
-[ ] make joystick agent
 [ ] percepts
 [ ] percept field of view
 [ ] orders

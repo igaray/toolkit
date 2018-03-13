@@ -45,5 +45,5 @@ fn main() {
   engine_thread_handle.join().unwrap();
   repl_thread_handle.join().unwrap();
 
-  error!("| Error: program incomplete");
+  error!("Error: program incomplete");
 }

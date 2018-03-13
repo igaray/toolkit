@@ -9,6 +9,14 @@ use serde_yaml;
 use mmass::config as config;
 use mmass::scenario as scenario;
 use mmass::engine as engine;
+use mmass::local_env as local_env;
+
+pub enum ReplState {
+  Init,
+  Running,
+  Generating,
+  Final,
+}
 
 pub enum ReplCommand {
   Help,
@@ -16,7 +24,7 @@ pub enum ReplCommand {
   WorldGen { name: String },
   Accept,
   Reject,
-  Start { scenario_name: String },
+  Start { world_name: String, scenario_name: String },
   Load { savefile: String },
   Run,
   Order { params: HashMap<String, String> },
@@ -31,9 +39,10 @@ pub enum ReplCommand {
 pub struct Repl {
   repl_mailbox: sync::mpsc::Receiver<engine::EngineMessage>,
   engine_mailbox: sync::mpsc::Sender<engine::EngineMessage>,
+  state: ReplState,
   config: config::Config,
   scenario_config: scenario::ScenarioConfig,
-  command_history: Vec<ReplCommand>,
+  env: Option<local_env::LocalEnv>,
 }
 
 impl Repl {
@@ -47,45 +56,33 @@ impl Repl {
     let mut repl = Repl{
       repl_mailbox: repl_mailbox,
       engine_mailbox: engine_mailbox,
+      state: ReplState::Init,
       config: config,
       scenario_config: scenario_config,
-      command_history: Vec::new(),
+      env: None,
       };
     let builder = thread::Builder::new().name("REPL".into());
     let handle = builder.spawn(move || { repl.run(); 0 }).unwrap();
     return handle
   }
-  
+
   fn run(&mut self) {
     loop {
-      match self.repl_mailbox.try_recv() {
-        Ok(ref msg) => {
-          debug!("REPL received: {:?}", msg);
-        },
-        Err(sync::mpsc::TryRecvError::Empty) => {
-        },
-        Err(sync::mpsc::TryRecvError::Disconnected) => {
-          error!("REPL received disconnected.");
-        }
-      }
-      
       let input = Repl::prompt();
       match Repl::parse(input) {
-        Ok(command) => {
-          match command {
-            ReplCommand::Quit => {
-              self.execute_command(&command);
-              break;
-            },
-            _ => {
-              self.execute_command(&command);
-              self.command_history.push(command);
-            }
-          }
-        },
-        Err(reason) => {
-          error!("{}", reason);
+        Ok(ReplCommand::Quit) => {
+          self.state_final(&ReplCommand::Quit);
+          break;
         }
+        Ok(command) => {
+          match self.state {
+            ReplState::Init => self.state_init(&command),
+            ReplState::Running => self.state_running(&command),
+            ReplState::Generating => self.state_generating(&command),
+            ReplState::Final => {}
+          }
+        }
+        Err(reason) => println!("Error: {}", reason),
       }
     }
   }
@@ -105,94 +102,171 @@ impl Repl {
     match tokens[0] {
       "help" => return Ok(ReplCommand::Help),
       "list" => {
-          if 1 < tokens.len() {
-            let target = String::from(tokens[1]);
-            return Ok(ReplCommand::List{ target })
-          } else {
-            return Err(String::from("Input error: list needs a parameter."))
-          }
-        },
+        if 1 < tokens.len() {
+          let target = tokens[1].to_string();
+          return Ok(ReplCommand::List{ target })
+        } else {
+          return Err("Input error: list takes a parameter.".to_string())
+        }
+      }
       "worldgen" => {
-          if 1 < tokens.len() {
-            let name = String::from(tokens[1]);
-            return Ok(ReplCommand::WorldGen{ name })
-          } else {
-            return Err(String::from("Input error: inspect needs a parameter."))
-          }
-        },
+        if 1 < tokens.len() {
+          let name = tokens[1].to_string();
+          return Ok(ReplCommand::WorldGen{ name })
+        } else {
+          return Err("Input error: inspect takes a parameter.".to_string())
+        }
+      }
       "accept" => return Ok(ReplCommand::Accept),
       "reject" => return Ok(ReplCommand::Reject),
       "start" => {
-          let scenario_name = String::from(tokens[1]);
-          return Ok(ReplCommand::Start{ scenario_name: scenario_name })
-        }, 
+        if 2 < tokens.len() {
+          let world_name = tokens[1].to_string();
+          let scenario_name = tokens[2].to_string();
+          return Ok(ReplCommand::Start{ world_name: world_name, scenario_name: scenario_name })
+        } else {
+          return Err("Input error: start takes two parameters.".to_string())
+        }
+      } 
       "load" => {
-          let savefile = String::from(tokens[1]);
-          return Ok(ReplCommand::Load{ savefile })
-        },
+        let savefile = tokens[1].to_string();
+        return Ok(ReplCommand::Load{ savefile })
+      }
       "run" => return Ok(ReplCommand::Run),
       "order" => {
-          // TODO
-          let params = HashMap::new();
-          return Ok(ReplCommand::Order{ params })
-        },
+        // TODO
+        let params = HashMap::new();
+        return Ok(ReplCommand::Order{ params })
+      }
       "pause" => return Ok(ReplCommand::Pause),
       "step" => {
-          // TODO
-          let steps = 1;
-          return Ok(ReplCommand::Step{ steps } )
-        },
+        if 1 < tokens.len() {
+          match tokens[1].parse::<u8>() {
+            Ok(steps) => return Ok(ReplCommand::Step{ steps } ),
+            Err(_reason) => return Err("Cannot convert the given value to an integer.".to_string()),
+          }
+        } else {
+          return Ok(ReplCommand::Step{ steps: 1 } )
+        }
+      }
       "save" => {
-          let savefile = String::from(tokens[1]);
-          return Ok(ReplCommand::Save{ savefile })
-        },
+        let savefile = tokens[1].to_string();
+        return Ok(ReplCommand::Save{ savefile })
+      }
       "stop" => return Ok(ReplCommand::Stop),
       "inspect" => {
-          if 1 < tokens.len() {
-            let target  = String::from(tokens[1]);
-            return Ok(ReplCommand::Inspect{ target: target })
-          } else {
-            return Err(String::from("Input error: inspect needs a parameter."))
-          }
-        },
+        if 1 < tokens.len() {
+          let target  = tokens[1].to_string();
+          return Ok(ReplCommand::Inspect{ target: target })
+        } else {
+          return Err("Input error: inspect needs a parameter.".to_string())
+        }
+      }
       "quit" => return Ok(ReplCommand::Quit),
       _ => {
-          return Err(String::from("Input error: unknown command."))
-        }
+        return Err("Input error: unknown command.".to_string())
+      }
+    }
+  }
+
+  fn state_init(&mut self, command: &ReplCommand) {
+    debug!("State: Init");
+    /*
+    match self.repl_mailbox.try_recv() {
+      Ok(ref msg) => {
+        debug!("Received: {:?}", msg);
+      }
+      Err(sync::mpsc::TryRecvError::Empty) => {
+        thread::sleep(Duration::from_millis(500));
+      }
+      Err(sync::mpsc::TryRecvError::Disconnected) => {
+        error!("Receiver disconnected.");
+      }
+    }
+    */
+    match command {
+      &ReplCommand::Help |
+      &ReplCommand::List{ .. } |
+      &ReplCommand::WorldGen{ .. } |
+      &ReplCommand::Start { .. } |
+      &ReplCommand::Load { .. } |
+      &ReplCommand::Quit => self.execute_command(command),
+      _ => {
+        println!("Invalid command. Enter 'help' for valid commands.");
+      }
+    }
+  }
+  
+  fn state_running(&mut self, command: &ReplCommand) {
+    debug!("State: Running");
+    match command {
+      &ReplCommand::Help |
+      &ReplCommand::Run |
+      &ReplCommand::Order { .. } |
+      &ReplCommand::Pause |
+      &ReplCommand::Step { .. } |
+      &ReplCommand::Save { .. } |
+      &ReplCommand::Stop |
+      &ReplCommand::Inspect{ .. } |
+      _ => {
+        println!("Invalid command. Enter 'help' for valid commands.");
+      }
+    }
+  }
+
+  fn state_generating(&mut self, command: &ReplCommand) {
+    debug!("State: Generating");
+    match command {
+      &ReplCommand::Accept |
+      &ReplCommand::Reject => self.execute_command(command),
+      _ => {
+        println!("Invalid command. Please enter 'accept' or 'reject'.");
+      }
+    }
+  }
+
+  fn state_final(&mut self, command: &ReplCommand) {
+    debug!("State: Final");
+    match command {
+      &ReplCommand::Quit => self.execute_command(command),
+      _ => {
+        println!("Invalid command.");
+      }
     }
   }
 
   fn execute_command(&mut self, command: &ReplCommand) {
     match command {
       &ReplCommand::Help => {
-        println!("Commands:");
-        println!("    help [<command>]");
-        println!("    worldgen <name>");
-        println!("    accept");
-        println!("    reject");
-        println!("    start <world> <scenario>");
-        println!("    load <savefile>");
-        println!("    run");
-        println!("    pause");
-        println!("    order ...");
-        println!("    save <savefile>");
-        println!("    step <n>");
-        println!("    stop");
-        println!("    list scenarios");
-        println!("         savefiles");
-        println!("    inspect config");
-        println!("            scenario_config");
-        println!("            engine");
-        println!("            agents");
-        println!("            orders");
-        println!("    quit");
-      },
-      &ReplCommand::List{ ref target }  => {
+        let help_text = r#"Commands:
+    help [<command>]
+    list scenarios
+         worlds
+         savefiles
+    worldgen <name>
+    accept
+    reject
+    start <world> <scenario>
+    load <savefile>
+    run
+    pause
+    step [<n>]
+    stop
+    inspect config
+            scenario_config
+    quit
+        "#;
+        println!("{}", help_text);
+      }
+      &ReplCommand::List{ ref target } => {
         match target.as_str() {
           "scenarios" => {
             for scenario in self.scenario_config.scenarios.iter() {
-              println!("- {}", scenario.name);
+              println!("{}", scenario.name);
             }
+          }
+          "worlds" => {
+            unimplemented!();
           }
           "savefiles" => {
             unimplemented!();
@@ -201,53 +275,70 @@ impl Repl {
             error!("Unexpected list target.");
           }
         }
-      },
-      &ReplCommand::WorldGen{ ref name }  => {
+      }
+      &ReplCommand::WorldGen{ ref name } => {
         let msg = engine::EngineMessage::ReqGenerate{ name: name.clone() };
+        self.state = ReplState::Generating;
         self.engine_mailbox.send(msg).unwrap();
         match self.repl_mailbox.recv().unwrap() {
-          engine::EngineMessage::ResGenerate => {
-            println!("World generated. accept / reject ?");
-          },
+          engine::EngineMessage::ResGenerate{ ref env } => {
+            println!("World generated. ");
+            println!("{:?}", &env);
+            println!("accept / reject ?");
+            // TODO hold on to env until next loop around
+            // self.env = Some(env.clone());
+          }
           msg => {
             error!("Unexpected message from engine: {:?}", msg);
           }
         }
-      },
+      }
       &ReplCommand::Accept => {
-        let msg = engine::EngineMessage::MsgAccept;
-        self.engine_mailbox.send(msg).unwrap();
-      },
+        // TODO save generated world
+        println!("Saving generated world...");
+        self.state = ReplState::Init;
+      }
       &ReplCommand::Reject => {
-        let msg = engine::EngineMessage::MsgReject;
+        // TODO save discard generated world
+        println!("Discarding generating world...");
+        self.state = ReplState::Init;
+      }
+      &ReplCommand::Start { ref world_name, ref scenario_name } => {
+        self.state = ReplState::Running;
+        let msg = engine::EngineMessage::MsgStart{
+          world_name: world_name.clone(),
+          scenario_name: scenario_name.clone()
+        };
         self.engine_mailbox.send(msg).unwrap();
-      },
-      &ReplCommand::Start { scenario_name: ref _scenario_name } => {
-        unimplemented!();
-      },
-      &ReplCommand::Load { savefile: ref _savefile } => {
-        unimplemented!();
-      },
+      }
+      &ReplCommand::Load { ref savefile } => {
+        self.state = ReplState::Running;
+        let msg = engine::EngineMessage::MsgLoad{ savefile: savefile.clone() };
+        self.engine_mailbox.send(msg).unwrap();
+      }
       &ReplCommand::Run => {
         let msg = engine::EngineMessage::MsgRun;
         self.engine_mailbox.send(msg).unwrap();
-      },
+      }
       &ReplCommand::Order { params: ref _params } => {
         unimplemented!();
-      },
+      }
       &ReplCommand::Pause => {
         let msg = engine::EngineMessage::MsgPause;
         self.engine_mailbox.send(msg).unwrap();
-      },
-      &ReplCommand::Step { steps: ref _steps } => {
-        unimplemented!();
-      },
-      &ReplCommand::Save { savefile: ref _savefile } => {
-        unimplemented!();
-      },
+      }
+      &ReplCommand::Step { ref steps } => {
+        let msg = engine::EngineMessage::MsgStep{ steps: *steps };
+        self.engine_mailbox.send(msg).unwrap();
+      }
+      &ReplCommand::Save { ref savefile } => {
+        let msg = engine::EngineMessage::MsgSave{ savefile: savefile.clone() };
+        self.engine_mailbox.send(msg).unwrap();
+      }
       &ReplCommand::Stop => {
-        self.engine_mailbox.send(engine::EngineMessage::MsgStop).unwrap();
-      },
+        let msg = engine::EngineMessage::MsgStop;
+        self.engine_mailbox.send(msg).unwrap();
+      }
       &ReplCommand::Inspect{ ref target } => {
         match target.as_str() {
           "config" => {
@@ -262,10 +353,11 @@ impl Repl {
             println!("Unknown inspect target.");
           },
         }
-      },
+      }
       &ReplCommand::Quit => {
         self.engine_mailbox.send(engine::EngineMessage::MsgQuit).unwrap();
-      },
+        self.state = ReplState::Final;
+      }
     }
   }
 }

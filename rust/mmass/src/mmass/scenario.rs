@@ -14,6 +14,8 @@ pub struct ScenarioConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Scenario {
   pub name: String,
+  pub height: u8,
+  pub width: u8,
   pub starting_units: Option<Vec<mmass::agent::Agent>>,
 }
   

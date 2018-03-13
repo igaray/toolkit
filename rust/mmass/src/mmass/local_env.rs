@@ -6,7 +6,6 @@ use mmass::action as action;
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Material {
   Earth,
-  Air,
   Water
 }
 
@@ -17,11 +16,26 @@ pub struct Cell {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalEnvMap {
-  cells: Vec<Cell>
+  cells: Vec<Vec<Cell>>,
+}
+
+impl LocalEnvMap {
+  pub fn new(height: u8, width: u8) -> LocalEnvMap {
+    let mut cells = Vec::new();
+    for _i in 1..height {
+      let mut row = Vec::new();
+      for _j in 1..width {
+        row.push(Cell{ material: Material::Earth });
+      }
+      cells.push(row);
+    }
+    return LocalEnvMap{ cells: cells }
+  }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalEnv {
+  name: String,
   map: LocalEnvMap,
   agents: agent::Agents,
   percepts: percept::Percepts,
@@ -29,10 +43,13 @@ pub struct LocalEnv {
 }
 
 impl LocalEnv {
-  pub fn new() -> LocalEnv {
+  pub fn generate(name: String, height: u8, width: u8) -> LocalEnv {
+    let map = LocalEnvMap::new(height, width);
+    let agents = agent::Agents::new();
     let local_env = LocalEnv{
-      map: LocalEnvMap{ cells: Vec::new() },
-      agents: agent::Agents::new(),
+      name: name,
+      map: map,
+      agents: agents,
       percepts: percept::Percepts::new(),
       actions: action::Actions::new(),
     };

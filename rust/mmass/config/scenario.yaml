@@ -1,8 +1,8 @@
 ---
 scenarios:
   - name: basic
-    global_env_kind: SquareGrid
-    local_env_kind: SquareGrid
+    height: 10
+    width: 10
     starting_units:
       - Reactive:
           id: 1
@@ -13,9 +13,3 @@ scenarios:
       - Reactive:
           id: 3
           name: AgentThree
-  - name: dwarf_fortress
-    global_env_kind: SquareGrid
-    local_env_kind: VoxelGrid
-  - name: advanced
-    global_env_kind: GeodesicGrid
-    local_env_kind: VoxelGrid
