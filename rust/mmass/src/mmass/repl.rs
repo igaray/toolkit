@@ -4,7 +4,11 @@ use std::io::BufRead;
 use std::collections::HashMap;
 use std::thread;
 use std::sync;
+use std::env;
+use std::fs;
+
 use serde_yaml;
+use bincode;
 
 use mmass::config as config;
 use mmass::scenario as scenario;
@@ -42,7 +46,7 @@ pub struct Repl {
   state: ReplState,
   config: config::Config,
   scenario_config: scenario::ScenarioConfig,
-  env: Option<local_env::LocalEnv>,
+  env: Option<Box<local_env::LocalEnv>>,
 }
 
 impl Repl {
@@ -286,7 +290,9 @@ impl Repl {
             println!("{:?}", &env);
             println!("accept / reject ?");
             // TODO hold on to env until next loop around
-            // self.env = Some(env.clone());
+            /*
+            self.env = Some(*env);
+            */
           }
           msg => {
             error!("Unexpected message from engine: {:?}", msg);
@@ -296,6 +302,17 @@ impl Repl {
       &ReplCommand::Accept => {
         // TODO save generated world
         println!("Saving generated world...");
+        /*
+        let env = &self.env.unwrap();
+        let serialized_world: Vec<u8> = bincode::serialize(env).unwrap();
+
+        let mut save_path = env::current_dir().unwrap();
+        save_path.push("worlds/");
+        save_path.push("TODO_REPLACE.bin");
+        println!("{:?}", save_path.clone());
+        let mut save_file = fs::File::create(save_path).unwrap();
+        save_file.write_all(&serialized_world).unwrap();
+        */
         self.state = ReplState::Init;
       }
       &ReplCommand::Reject => {

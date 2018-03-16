@@ -11,12 +11,12 @@ pub enum Material {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Cell {
-  material: Material
+  pub material: Material
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalEnvMap {
-  cells: Vec<Vec<Cell>>,
+  pub cells: Vec<Vec<Cell>>,
 }
 
 impl LocalEnvMap {
@@ -35,11 +35,11 @@ impl LocalEnvMap {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocalEnv {
-  name: String,
-  map: LocalEnvMap,
-  agents: agent::Agents,
-  percepts: percept::Percepts,
-  actions: action::Actions,
+  pub name: String,
+  pub map: LocalEnvMap,
+  pub agents: agent::Agents,
+  pub percepts: percept::Percepts,
+  pub actions: action::Actions,
 }
 
 impl LocalEnv {

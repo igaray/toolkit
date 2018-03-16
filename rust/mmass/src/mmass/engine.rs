@@ -19,7 +19,7 @@ enum EngineState {
 #[derive(Debug)]
 pub enum EngineMessage {
   ReqGenerate{ name: String },
-  ResGenerate{ env: local_env::LocalEnv },
+  ResGenerate{ env: Box<local_env::LocalEnv> },
   MsgStart{ world_name: String, scenario_name: String },
   MsgLoad{ savefile: String },
   MsgRun,
@@ -80,7 +80,7 @@ impl Engine {
         debug!("Message: MsgGenerate");
         // TODO execute worldgen
         let env = local_env::LocalEnv::generate(name.clone(), 10, 10);
-        let msg = EngineMessage::ResGenerate{ env };
+        let msg = EngineMessage::ResGenerate{ env: Box::new(env) };
         self.repl_mailbox.send(msg).unwrap();
       },
       EngineMessage::MsgStart{ world_name: ref _world_name, scenario_name: ref _scenario_name } => {
