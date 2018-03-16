@@ -16,7 +16,7 @@
 [x] remove globalenv and simplify localenv
 [x] engine fsm
 [x] trivial square grid world gen
-[ ] save generated world
+[x] save generated world
 [ ] list existing worlds
 [ ] start new sim in a generated world and scenario
 [ ] basic perceive-act loop with empty percepts and noop actions for all agents

@@ -8,6 +8,7 @@ extern crate serde_yaml;
 extern crate bincode;
 
 use std::sync;
+use std::fs;
 
 mod mmass;
 
@@ -34,6 +35,8 @@ fn main() {
   }
   */
 
+  init_directories();
+
   let config = mmass::config::Config::new();
   let scenario_config = mmass::scenario::Scenario::new();
 
@@ -48,3 +51,15 @@ fn main() {
 
   error!("Error: program incomplete");
 }
+
+fn init_directories() {
+  let config_path = "./config";
+  let worlds_path = "./worlds";
+  let saves_path = "./saves";
+  let mut builder = fs::DirBuilder::new();
+  builder.recursive(true);
+  builder.create(config_path).unwrap();
+  builder.create(worlds_path).unwrap();
+  builder.create(saves_path).unwrap();
+}
+

@@ -75,14 +75,14 @@ impl Repl {
       let input = Repl::prompt();
       match Repl::parse(input) {
         Ok(ReplCommand::Quit) => {
-          self.state_final(&ReplCommand::Quit);
+          self.state_final(ReplCommand::Quit);
           break;
         }
         Ok(command) => {
           match self.state {
-            ReplState::Init => self.state_init(&command),
-            ReplState::Running => self.state_running(&command),
-            ReplState::Generating => self.state_generating(&command),
+            ReplState::Init => self.state_init(command),
+            ReplState::Running => self.state_running(command),
+            ReplState::Generating => self.state_generating(command),
             ReplState::Final => {}
           }
         }
@@ -173,7 +173,7 @@ impl Repl {
     }
   }
 
-  fn state_init(&mut self, command: &ReplCommand) {
+  fn state_init(&mut self, command: ReplCommand) {
     debug!("State: Init");
     /*
     match self.repl_mailbox.try_recv() {
@@ -189,59 +189,59 @@ impl Repl {
     }
     */
     match command {
-      &ReplCommand::Help |
-      &ReplCommand::List{ .. } |
-      &ReplCommand::WorldGen{ .. } |
-      &ReplCommand::Start { .. } |
-      &ReplCommand::Load { .. } |
-      &ReplCommand::Quit => self.execute_command(command),
+      ReplCommand::Help |
+      ReplCommand::List{ .. } |
+      ReplCommand::WorldGen{ .. } |
+      ReplCommand::Start { .. } |
+      ReplCommand::Load { .. } |
+      ReplCommand::Quit => self.execute_command(command),
       _ => {
         println!("Invalid command. Enter 'help' for valid commands.");
       }
     }
   }
   
-  fn state_running(&mut self, command: &ReplCommand) {
+  fn state_running(&mut self, command: ReplCommand) {
     debug!("State: Running");
     match command {
-      &ReplCommand::Help |
-      &ReplCommand::Run |
-      &ReplCommand::Order { .. } |
-      &ReplCommand::Pause |
-      &ReplCommand::Step { .. } |
-      &ReplCommand::Save { .. } |
-      &ReplCommand::Stop |
-      &ReplCommand::Inspect{ .. } |
+      ReplCommand::Help |
+      ReplCommand::Run |
+      ReplCommand::Order { .. } |
+      ReplCommand::Pause |
+      ReplCommand::Step { .. } |
+      ReplCommand::Save { .. } |
+      ReplCommand::Stop |
+      ReplCommand::Inspect{ .. } |
       _ => {
         println!("Invalid command. Enter 'help' for valid commands.");
       }
     }
   }
 
-  fn state_generating(&mut self, command: &ReplCommand) {
+  fn state_generating(&mut self, command: ReplCommand) {
     debug!("State: Generating");
     match command {
-      &ReplCommand::Accept |
-      &ReplCommand::Reject => self.execute_command(command),
+      ReplCommand::Accept |
+      ReplCommand::Reject => self.execute_command(command),
       _ => {
         println!("Invalid command. Please enter 'accept' or 'reject'.");
       }
     }
   }
 
-  fn state_final(&mut self, command: &ReplCommand) {
+  fn state_final(&mut self, command: ReplCommand) {
     debug!("State: Final");
     match command {
-      &ReplCommand::Quit => self.execute_command(command),
+      ReplCommand::Quit => self.execute_command(command),
       _ => {
         println!("Invalid command.");
       }
     }
   }
 
-  fn execute_command(&mut self, command: &ReplCommand) {
+  fn execute_command(&mut self, command: ReplCommand) {
     match command {
-      &ReplCommand::Help => {
+      ReplCommand::Help => {
         let help_text = r#"Commands:
     help [<command>]
     list scenarios
@@ -262,7 +262,7 @@ impl Repl {
         "#;
         println!("{}", help_text);
       }
-      &ReplCommand::List{ ref target } => {
+      ReplCommand::List{ target } => {
         match target.as_str() {
           "scenarios" => {
             for scenario in self.scenario_config.scenarios.iter() {
@@ -280,47 +280,47 @@ impl Repl {
           }
         }
       }
-      &ReplCommand::WorldGen{ ref name } => {
+      ReplCommand::WorldGen{ name } => {
         let msg = engine::EngineMessage::ReqGenerate{ name: name.clone() };
         self.state = ReplState::Generating;
         self.engine_mailbox.send(msg).unwrap();
         match self.repl_mailbox.recv().unwrap() {
-          engine::EngineMessage::ResGenerate{ ref env } => {
+          engine::EngineMessage::ResGenerate{ env } => {
             println!("World generated. ");
             println!("{:?}", &env);
             println!("accept / reject ?");
-            // TODO hold on to env until next loop around
-            /*
-            self.env = Some(*env);
-            */
+            self.env = Some(env);
           }
           msg => {
             error!("Unexpected message from engine: {:?}", msg);
           }
         }
       }
-      &ReplCommand::Accept => {
+      ReplCommand::Accept => {
         // TODO save generated world
-        println!("Saving generated world...");
-        /*
-        let env = &self.env.unwrap();
-        let serialized_world: Vec<u8> = bincode::serialize(env).unwrap();
-
-        let mut save_path = env::current_dir().unwrap();
-        save_path.push("worlds/");
-        save_path.push("TODO_REPLACE.bin");
-        println!("{:?}", save_path.clone());
-        let mut save_file = fs::File::create(save_path).unwrap();
-        save_file.write_all(&serialized_world).unwrap();
-        */
+        match self.env {
+          Some(ref env) => {
+            let serialized_world: Vec<u8> = bincode::serialize(&*env).unwrap();
+            let mut save_path = env::current_dir().unwrap();
+            save_path.push("worlds");
+            save_path.push(&env.name);
+            save_path.set_extension("bin");
+            println!("Saving generated world to {:?}", &save_path);
+            let mut save_file = fs::File::create(save_path).unwrap();
+            save_file.write_all(&serialized_world).unwrap();
+          }
+          None => {
+            error!("Trying to serialize environment but there is None.");
+          }
+        }
         self.state = ReplState::Init;
       }
-      &ReplCommand::Reject => {
+      ReplCommand::Reject => {
         // TODO save discard generated world
         println!("Discarding generating world...");
         self.state = ReplState::Init;
       }
-      &ReplCommand::Start { ref world_name, ref scenario_name } => {
+      ReplCommand::Start { world_name, scenario_name } => {
         self.state = ReplState::Running;
         let msg = engine::EngineMessage::MsgStart{
           world_name: world_name.clone(),
@@ -328,35 +328,35 @@ impl Repl {
         };
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Load { ref savefile } => {
+      ReplCommand::Load { savefile } => {
         self.state = ReplState::Running;
         let msg = engine::EngineMessage::MsgLoad{ savefile: savefile.clone() };
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Run => {
+      ReplCommand::Run => {
         let msg = engine::EngineMessage::MsgRun;
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Order { params: ref _params } => {
+      ReplCommand::Order { params: _params } => {
         unimplemented!();
       }
-      &ReplCommand::Pause => {
+      ReplCommand::Pause => {
         let msg = engine::EngineMessage::MsgPause;
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Step { ref steps } => {
-        let msg = engine::EngineMessage::MsgStep{ steps: *steps };
+      ReplCommand::Step { steps } => {
+        let msg = engine::EngineMessage::MsgStep{ steps };
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Save { ref savefile } => {
+      ReplCommand::Save { savefile } => {
         let msg = engine::EngineMessage::MsgSave{ savefile: savefile.clone() };
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Stop => {
+      ReplCommand::Stop => {
         let msg = engine::EngineMessage::MsgStop;
         self.engine_mailbox.send(msg).unwrap();
       }
-      &ReplCommand::Inspect{ ref target } => {
+      ReplCommand::Inspect{ target } => {
         match target.as_str() {
           "config" => {
             let s = serde_yaml::to_string(&self.config).unwrap();
@@ -371,7 +371,7 @@ impl Repl {
           },
         }
       }
-      &ReplCommand::Quit => {
+      ReplCommand::Quit => {
         self.engine_mailbox.send(engine::EngineMessage::MsgQuit).unwrap();
         self.state = ReplState::Final;
       }
