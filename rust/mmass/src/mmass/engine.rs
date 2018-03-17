@@ -3,7 +3,6 @@ use std::time;
 use std::sync;
 
 use mmass::config as config;
-use mmass::scenario as scenario;
 use mmass::local_env as local_env;
 
 #[derive(Debug)]
@@ -35,8 +34,8 @@ pub struct Engine {
   engine_mailbox: sync::mpsc::Receiver<EngineMessage>,
   repl_mailbox: sync::mpsc::Sender<EngineMessage>,
   config: config::Config,
-  scenario: scenario::ScenarioConfig,
   state: EngineState,
+  scenario: Option<config::Scenario>,
   local_env: Option<local_env::LocalEnv>,
 }
 
@@ -45,14 +44,13 @@ impl Engine {
       engine_mailbox: sync::mpsc::Receiver<EngineMessage>,
       repl_mailbox: sync::mpsc::Sender<EngineMessage>,
       config: config::Config,
-      scenario: scenario::ScenarioConfig
     ) -> thread::JoinHandle<u32> {
     let mut engine = Engine{
       engine_mailbox: engine_mailbox,
       repl_mailbox: repl_mailbox,
       config: config,
-      scenario: scenario,
       state: EngineState::Main,
+      scenario: None,
       local_env: None,
       };
     let builder = thread::Builder::new().name("Engine".into());
@@ -63,7 +61,7 @@ impl Engine {
   pub fn run(&mut self) {
     loop {
       match self.state {
-        EngineState::Main => self.state_init(),
+        EngineState::Main => self.state_main(),
         EngineState::Running => self.state_running(),
         EngineState::Paused => self.state_paused(),
         EngineState::Final => {
@@ -74,10 +72,10 @@ impl Engine {
     }
   }
 
-  fn state_init(&mut self) {
+  fn state_main(&mut self) {
     debug!("State: Main");
     match self.engine_mailbox.recv() {
-      Ok(msg) => self.handle_msg_init(msg),
+      Ok(msg) => self.handle_msg_main(msg),
       Err(sync::mpsc::RecvError) => {
         error!("Receive error.");
         panic!();
@@ -114,7 +112,7 @@ impl Engine {
     debug!("State: Final");
   }
 
-  fn handle_msg_init(&mut self, msg: EngineMessage) {
+  fn handle_msg_main(&mut self, msg: EngineMessage) {
     match msg {
       EngineMessage::ReqGenerate{ name } => {
         debug!("Message: MsgGenerate");
@@ -162,7 +160,7 @@ impl Engine {
       }
       EngineMessage::MsgStop => {
         debug!("Message: MsgStop.");
-        // TODO Save and go to init state.
+        // TODO Save and go to main state.
         self.state = EngineState::Main;
         unimplemented!();
       }

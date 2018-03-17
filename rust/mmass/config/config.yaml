@@ -1,2 +1,14 @@
 ---
 debug: true
+scenarios:
+  - name: basic
+    starting_units:
+      - Reactive:
+          id: 1
+          name: AgentOne
+      - Reactive:
+          id: 2
+          name: AgentTwo
+      - Reactive:
+          id: 3
+          name: AgentThree

@@ -11,7 +11,6 @@ use serde_yaml;
 use bincode;
 
 use mmass::config as config;
-use mmass::scenario as scenario;
 use mmass::engine as engine;
 use mmass::local_env as local_env;
 
@@ -46,7 +45,6 @@ pub struct Repl {
   engine_mailbox: sync::mpsc::Sender<engine::EngineMessage>,
   state: ReplState,
   config: config::Config,
-  scenario_config: scenario::ScenarioConfig,
   env: Option<Box<local_env::LocalEnv>>,
 }
 
@@ -55,7 +53,6 @@ impl Repl {
       repl_mailbox: sync::mpsc::Receiver<engine::EngineMessage>,
       engine_mailbox: sync::mpsc::Sender<engine::EngineMessage>,
       config: config::Config,
-      scenario_config: scenario::ScenarioConfig,
       ) -> thread::JoinHandle<u32>
   {
     let mut repl = Repl{
@@ -63,7 +60,6 @@ impl Repl {
       engine_mailbox: engine_mailbox,
       state: ReplState::Main,
       config: config,
-      scenario_config: scenario_config,
       env: None,
       };
     let builder = thread::Builder::new().name("REPL".into());
@@ -212,7 +208,7 @@ impl Repl {
   fn execute_command_list(&mut self, target: String) {
     match target.as_str() {
       "scenarios" => {
-        for scenario in self.scenario_config.scenarios.iter() {
+        for scenario in self.config.scenarios.iter() {
           println!("{}", scenario.name);
         }
       }
@@ -319,7 +315,7 @@ impl Repl {
       "config" =>
         println!("{}", serde_yaml::to_string(&self.config).unwrap()),
       "scenario_config" =>
-        println!("{}", serde_yaml::to_string(&self.scenario_config).unwrap()),
+        println!("{}", serde_yaml::to_string(&self.config).unwrap()),
       &_ =>
         println!("Unknown inspect target.")
     }

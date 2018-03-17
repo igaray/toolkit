@@ -19,7 +19,7 @@
 [x] save generated world
 [x] list existing worlds
 [ ] deserialize a saved world
-[ ] merge global and scenario config, maybe one file, maybe two, but only one config object
+[x] merge global and scenario config, maybe one file, maybe two, but only one config object
 [ ] start new sim in a generated world and scenario
 [ ] basic perceive-act loop with empty percepts and noop actions for all agents
 [ ] pause sim
@@ -29,10 +29,11 @@
 [x] list existing savefiles
 [ ] deserialize a saved sim
 [ ] load sim
-[ ] write documentation in help command for all other commands
 [ ] make joystick agent
 
 Future work
+[ ] write documentation in help command for all other commands
+[ ] list scenarios, worlds and savefiles in alphabetical order
 [ ] percepts
 [ ] percept field of view
 [ ] orders
