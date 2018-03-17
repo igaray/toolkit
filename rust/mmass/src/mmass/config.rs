@@ -6,7 +6,7 @@ use serde_yaml;
 // Engine Configuration
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
-  debug: bool
+  pub debug: bool
 }
 
 impl Config {

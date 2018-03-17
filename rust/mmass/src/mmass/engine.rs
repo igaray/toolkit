@@ -1,4 +1,5 @@
 use std::thread;
+use std::time;
 use std::sync;
 
 use mmass::config as config;
@@ -7,7 +8,7 @@ use mmass::local_env as local_env;
 
 #[derive(Debug)]
 enum EngineState {
-  Init,
+  Main,
   Running,
   Paused,
   Final
@@ -51,7 +52,7 @@ impl Engine {
       repl_mailbox: repl_mailbox,
       config: config,
       scenario: scenario,
-      state: EngineState::Init,
+      state: EngineState::Main,
       local_env: None,
       };
     let builder = thread::Builder::new().name("Engine".into());
@@ -62,7 +63,7 @@ impl Engine {
   pub fn run(&mut self) {
     loop {
       match self.state {
-        EngineState::Init => self.state_init(),
+        EngineState::Main => self.state_init(),
         EngineState::Running => self.state_running(),
         EngineState::Paused => self.state_paused(),
         EngineState::Final => {
@@ -74,91 +75,127 @@ impl Engine {
   }
 
   fn state_init(&mut self) {
-    debug!("State: Init");
-    match self.engine_mailbox.recv().unwrap() {
-      EngineMessage::ReqGenerate{ ref name } => {
-        debug!("Message: MsgGenerate");
-        // TODO execute worldgen
-        let env = local_env::LocalEnv::generate(name.clone(), 10, 10);
-        let msg = EngineMessage::ResGenerate{ env: Box::new(env) };
-        self.repl_mailbox.send(msg).unwrap();
-      },
-      EngineMessage::MsgStart{ world_name: ref _world_name, scenario_name: ref _scenario_name } => {
-        debug!("Message: MsgStart");
-        self.state = EngineState::Paused;
-        unimplemented!();
-      },
-      EngineMessage::MsgLoad{ savefile: ref _savefile } => {
-        debug!("Message: MsgLoad");
-        self.state = EngineState::Paused;
-        unimplemented!();
-      },
-      EngineMessage::MsgQuit => {
-        debug!("Message: MsgQuit");
-        self.state = EngineState::Final;
-      },
-      _msg => {
-        error!("Unexpected message. state: {:?} msg: {:?}", self.state, _msg);
+    debug!("State: Main");
+    match self.engine_mailbox.recv() {
+      Ok(msg) => self.handle_msg_init(msg),
+      Err(sync::mpsc::RecvError) => {
+        error!("Receive error.");
+        panic!();
       }
     }
   }
 
   fn state_paused(&mut self) {
     debug!("State: Paused");
-    match self.engine_mailbox.recv().unwrap() {
-      EngineMessage::MsgRun => {
-        debug!("Message: MsgRun.");
-        self.state = EngineState::Running;
-        unimplemented!();
-      },
-      EngineMessage::MsgStep{ steps: ref _steps } => {
-        debug!("Message: MsgStep.");
-        unimplemented!();
-      },
-      EngineMessage::MsgSave{ savefile: ref _savefile } => {
-        debug!("Message: MsgSave.");
-        unimplemented!();
-      },
-      EngineMessage::MsgStop => {
-        debug!("Message: MsgStop.");
-        self.state = EngineState::Init;
-        unimplemented!();
-      },
-      EngineMessage::MsgQuit => {
-        debug!("Message: MsgQuit.");
-        self.state = EngineState::Final;
-      },
-      _msg => {
-        error!("Unexpected message. state: {:?} msg: {:?}", self.state, _msg);
+    match self.engine_mailbox.recv() {
+      Ok(msg) => self.handle_msg_paused(msg),
+      Err(sync::mpsc::RecvError) => {
+        error!("Receive error.");
+        panic!();
       }
     }
   }
 
   fn state_running(&mut self) {
     debug!("State: Running");
-    match self.engine_mailbox.try_recv().unwrap() {
-      EngineMessage::MsgPause => {
-        debug!("Message: MsgPause.");
-        self.state = EngineState::Paused;
-        unimplemented!();
-      },
-      EngineMessage::MsgStop => {
-        debug!("Message: MsgStop.");
-        self.state = EngineState::Init;
-        unimplemented!();
-      },
-      EngineMessage::MsgQuit => {
-        debug!("Message: MsgQuit.");
-        self.state = EngineState::Final;
-      },
-      _msg => {
-        error!("Unexpected message. state: {:?} msg: {:?}", self.state, _msg);
+    match self.engine_mailbox.try_recv() {
+      Ok(msg) => self.handle_msg_running(msg),
+      Err(sync::mpsc::TryRecvError::Empty) => {
+        thread::sleep(time::Duration::from_millis(500));
+      }
+      Err(sync::mpsc::TryRecvError::Disconnected) => {
+        error!("Receiver disconnected.");
+        panic!();
       }
     }
   }
 
   fn state_final(&mut self) {
     debug!("State: Final");
+  }
+
+  fn handle_msg_init(&mut self, msg: EngineMessage) {
+    match msg {
+      EngineMessage::ReqGenerate{ name } => {
+        debug!("Message: MsgGenerate");
+        let env = local_env::LocalEnv::generate(name.clone(), 10, 10);
+        let msg = EngineMessage::ResGenerate{ env: Box::new(env) };
+        self.repl_mailbox.send(msg).unwrap();
+      }
+      EngineMessage::MsgStart{ world_name, scenario_name } => {
+        debug!("Message: MsgStart");
+        debug!("Starting simulation in world {} under {} scenario", world_name, scenario_name);
+        // TODO deserialize the world
+        // TODO fetch and set the scenario parameters
+        // TODO initialize the simulation
+        self.state = EngineState::Paused;
+      }
+      EngineMessage::MsgLoad{ savefile: _savefile } => {
+        debug!("Message: MsgLoad");
+        self.state = EngineState::Paused;
+        unimplemented!();
+      }
+      EngineMessage::MsgQuit => {
+        debug!("Message: MsgQuit");
+        self.state = EngineState::Final;
+      }
+      msg => {
+        error!("Unexpected message. state: {:?} msg: {:?}", self.state, msg);
+      }
+    }
+  }
+
+  fn handle_msg_paused(&mut self, msg: EngineMessage) {
+    match msg {
+      EngineMessage::MsgRun => {
+        debug!("Message: MsgRun.");
+        self.state = EngineState::Running;
+        unimplemented!();
+      }
+      EngineMessage::MsgStep{ steps: _steps } => {
+        debug!("Message: MsgStep.");
+        unimplemented!();
+      }
+      EngineMessage::MsgSave{ savefile: _savefile } => {
+        debug!("Message: MsgSave.");
+        unimplemented!();
+      }
+      EngineMessage::MsgStop => {
+        debug!("Message: MsgStop.");
+        // TODO Save and go to init state.
+        self.state = EngineState::Main;
+        unimplemented!();
+      }
+      EngineMessage::MsgQuit => {
+        debug!("Message: MsgQuit.");
+        self.state = EngineState::Final;
+      }
+      msg => {
+        error!("Unexpected message. state: {:?} msg: {:?}", self.state, msg);
+      }
+    }
+  }
+
+  fn handle_msg_running(&mut self, msg: EngineMessage) {
+    match msg {
+      EngineMessage::MsgPause => {
+        debug!("Message: MsgPause.");
+        self.state = EngineState::Paused;
+        unimplemented!();
+      }
+      EngineMessage::MsgStop => {
+        debug!("Message: MsgStop.");
+        self.state = EngineState::Main;
+        unimplemented!();
+      }
+      EngineMessage::MsgQuit => {
+        debug!("Message: MsgQuit.");
+        self.state = EngineState::Final;
+      }
+      msg => {
+        error!("Unexpected message. state: {:?} msg: {:?}", self.state, msg);
+      }
+    }
   }
 }
 
