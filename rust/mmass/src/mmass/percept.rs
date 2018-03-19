@@ -1,12 +1,4 @@
-use std::collections::HashMap;
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Percept {
-  id: u64,
-  fov: Vec<TerrainDescription>,
-  agents: Vec<AgentDescription>,
-  objects: Vec<ObjectDescription>
-}
+use rand;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TerrainDescription {
@@ -23,13 +15,22 @@ pub struct ObjectDescription {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Percepts {
-  data: HashMap<u64, Percept>
+pub struct Percept {
+  id: u64,
+  fov: Vec<TerrainDescription>,
+  agents: Vec<AgentDescription>,
+  objects: Vec<ObjectDescription>
 }
 
-impl Percepts {
-  pub fn new() -> Percepts {
-    return Percepts{data: HashMap::new()}
+impl Percept {
+  pub fn new() -> Percept {
+    let id = rand::random::<u64>();
+    let percept = Percept{
+      id: id,
+      fov: Vec::new(),
+      agents: Vec::new(),
+      objects: Vec::new()
+    };
+    return percept
   }
 }
-

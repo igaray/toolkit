@@ -1,12 +1,24 @@
 // Local Environment
 use mmass::agent as agent;
-use mmass::percept as percept;
 use mmass::action as action;
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Position {
+  pub x: u8,
+  pub y: u8,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Direction {
+  North,
+  East,
+  South,
+  West
+}
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Material {
   Earth,
-  Water
+  Water,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -38,7 +50,6 @@ pub struct LocalEnv {
   pub name: String,
   pub map: LocalEnvMap,
   pub agents: agent::Agents,
-  pub percepts: percept::Percepts,
   pub actions: action::Actions,
 }
 
@@ -50,7 +61,6 @@ impl LocalEnv {
       name: name,
       map: map,
       agents: agents,
-      percepts: percept::Percepts::new(),
       actions: action::Actions::new(),
     };
     return local_env

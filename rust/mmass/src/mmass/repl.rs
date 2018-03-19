@@ -137,8 +137,12 @@ impl Repl {
     debug!("State: Paused");
     match command {
       ReplCommand::Help => self.execute_command_help_paused(),
+      ReplCommand::Run => self.execute_command_run(),
+      ReplCommand::Step{ steps } => self.execute_command_step(steps),
+      ReplCommand::Stop => self.execute_command_stop(),
+      ReplCommand::Inspect{ target } => self.execute_command_inspect(target),
+      ReplCommand::Quit => self.execute_command_quit(),
       _ => println!("Invalid command. Enter 'help' for valid commands.")
-
     }
   }
 
@@ -268,12 +272,28 @@ impl Repl {
   }
 
   fn execute_command_start(&mut self, scenario_name: String, world_name: String) {
-    let msg = engine::EngineMessage::MsgStart{
+    let msg = engine::EngineMessage::ReqStart{
+      scenario_name: scenario_name.clone(),
       world_name: world_name.clone(),
-      scenario_name: scenario_name.clone()
     };
     self.engine_mailbox.send(msg).unwrap();
-    self.state = ReplState::Running;
+
+    match self.repl_mailbox.recv().unwrap() {
+      engine::EngineMessage::ResStart{ error } => {
+        match error {
+          engine::EngineMessageResult::Ok => {
+            self.state = ReplState::Paused;
+          },
+          engine::EngineMessageResult::Err => {
+            error!("Unable to start simulation.");
+          }
+        }
+      }
+      msg => {
+        error!("Unexpected message from engine: {:?}", msg);
+        panic!();
+      }
+    }
   }
 
   fn execute_command_load(&mut self, savefile: String) {
@@ -361,9 +381,9 @@ fn parse(input: String) -> Result<ReplCommand, String> {
     "reject" => return Ok(ReplCommand::Reject),
     "start" => {
       if 2 < tokens.len() {
-        let world_name = tokens[1].to_string();
-        let scenario_name = tokens[2].to_string();
-        return Ok(ReplCommand::Start{ world_name: world_name, scenario_name: scenario_name })
+        let scenario_name = tokens[1].to_string();
+        let world_name = tokens[2].to_string();
+        return Ok(ReplCommand::Start{ scenario_name: scenario_name, world_name: world_name })
       } else {
         return Err("Input error: start takes two parameters.".to_string())
       }

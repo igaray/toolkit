@@ -1,74 +1,72 @@
 use std::collections::HashMap;
 use rand;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct JoystickAgent {
-  id: u64,
-  name: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ReactiveAgent {
-  id: u64,
-  name: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct BDIAgent {
-  id: u64,
-  name: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct StrategicAgent {
-  id: u64,
-  name: String,
-}
+use mmass::local_env as local_env;
+use mmass::action as action;
+use mmass::percept as percept;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum AgentKind {
   Joystick,
-  Reactive,
-  BDI,
-  Strategic,
+  Reactive
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Agent {
-  Joystick(JoystickAgent),
-  Reactive(ReactiveAgent),
-  BDI(BDIAgent),
-  Strategic(StrategicAgent),
+pub enum AgentData {
+  Joystick {
+  },
+  Reactive {
+  }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Agent {
+  pub id: u64,
+  pub position: local_env::Position,
+  pub data: AgentData,
 }
 
 impl Agent {
-  pub fn new(kind: AgentKind, name: String) -> Agent {
+  pub fn new(kind: AgentKind, position: local_env::Position) -> Agent {
     let id = rand::random::<u64>();
     match kind {
       AgentKind::Joystick => {
-          return Agent::Joystick(JoystickAgent{id: id, name: name})
-        },
+        return Agent{
+          id: id,
+          position: position,
+          data: AgentData::Joystick{  }
+        }
+      }
       AgentKind::Reactive => {
-          return Agent::Reactive(ReactiveAgent{id: id, name: name})
-        },
-      AgentKind::BDI => {
-          return Agent::BDI(BDIAgent{id: id, name: name})
-        },
-      AgentKind::Strategic => {
-          return Agent::Strategic(StrategicAgent{id: id, name: name})
-        },
+        return Agent{
+          id: id,
+          position: position,
+          data: AgentData::Reactive{  }
+        }
+      }
     }
+  }
+
+  pub fn percept(&self) -> percept::Percept {
+    return percept::Percept::new()
+  }
+
+  pub fn action(&self, _percept: percept::Percept) -> action::Action {
+    return action::Action::new(self.id, action::ActionData::Noop)
   }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Agents {
-  data: HashMap<u64, Agent>
+  pub data: HashMap<u64, Agent>
 }
 
 impl Agents {
   pub fn new() -> Agents {
     return Agents{data: HashMap::new()}
   }
-}
 
+  pub fn add(&mut self, agent: Agent) {
+    self.data.insert(agent.id, agent);
+  }
+}
