@@ -13,6 +13,7 @@ pub enum ActionKind {
 pub enum ActionData {
   Noop,
   Move{ direction: local_env::Direction },
+  GoTo{ position: local_env::Position },
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -43,7 +44,6 @@ impl Actions {
   pub fn new() -> Actions {
     return Actions{data: HashMap::new()}
   }
-
 
   pub fn clear(&mut self) {
     self.data.drain();

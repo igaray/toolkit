@@ -22,46 +22,64 @@
 [x] basic perceive-act loop with empty percepts and noop actions for all agents
 [x] pause sim
 [x] step through sim
+[ ] list agents
+[ ] inspect agent
+[ ] starting location selection for agents
+[ ] write documentation in help command for all other commands
+[ ] list scenarios, worlds and savefiles in alphabetical order
 [ ] save current sim
 [ ] make savefile name optional in save command, if none, save under default name
 [x] list existing savefiles
 [ ] deserialize a saved sim
 [ ] load sim
 [ ] make joystick agent
+[ ] percepts
+  [ ] percept agents
+  [ ] percept field of view
+[ ] entity component system
+  [ ] embodied agents
+  [ ] action pre and post condition checking and applying
+[ ] objects
+  [ ] agent inventory
+  [ ] action: pickup
+  [ ] action: drop
+  [ ] percept objects
+[ ] action conflict resolution
+[ ] agent movement
+  [ ] plan (list of pre-planned actions)
+  [ ] pathfinding
+[ ] orders
+  [ ] - noop
+  [ ] - move
+  [ ] - goto
+  [ ] - grab
+  [ ] - drop
+  [ ] list orders
+  [ ] inspect order
+  [ ] make agents get orders
 
 Future work
-[ ] list agents
-[ ] inspect agent
-[ ] write documentation in help command for all other commands
-[ ] list scenarios, worlds and savefiles in alphabetical order
-[ ] percepts
-[ ] percept field of view
-[ ] orders
-[ ] - noop
-[ ] - move
-[ ] - grab
-[ ] - drop
-[ ] make agents get orders
-[ ] pathfinding
-[ ] goto order
-[ ] objects
+[ ] fix your time step
+[ ] gui: tcod
 [ ] areas
+[ ] events
+[ ] effects
 [ ] collections
-  [ ] agents
-  [ ] actions
-  [ ] percepts
-  [ ] areas
-  [ ] events
-  [ ] objects
-  [ ] orders
 [ ] polish
 [ ] tests
 [ ] coverage
 [ ] compress world and save files
-[ ] make agent loading not require the id in the scenario config
+[x] make agent loading not require the id in the scenario config
     if the id is not present, create a new random one
+[ ] unbuffered repl input
 [ ] show repl command history
+[ ] repl keybindings
 [ ] ncurses or similar for repl, readline functionality
 [ ] engine process socket/zeromq/nanomsg + protobuf/capnproto
-[ ] separate repl and engine
-[ ] ui process
+[ ] separate repl/ui and engine
+[ ] more types of local environments
+[ ] global
+  [ ] global engine fsm states
+  [ ] global environments
+  [ ] global agents
+  [ ] global objects

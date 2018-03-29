@@ -1,3 +1,16 @@
+/*
+mmass config
+- difficulty
+- ui language
+- autosave enabled
+- initial save
+- pause on load
+- temperature
+- weather
+- economy
+- invaders
+*/
+
 use std::env;
 use std::fs;
 use std::io::Read;
