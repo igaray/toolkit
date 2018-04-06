@@ -7,6 +7,7 @@ use mmass::local_env as local_env;
 pub enum ActionKind {
   Noop,
   Move,
+  GoTo,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

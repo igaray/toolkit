@@ -13,6 +13,13 @@ use mmass::agent as agent;
 use mmass::action as action;
 
 #[derive(Debug)]
+struct SimulationState {
+  pub scenario: Option<config::Scenario>,
+  pub env: Option<local_env::LocalEnv>,
+  pub ti: u64,
+}
+
+#[derive(Debug)]
 enum EngineState {
   Main,
   Running,
@@ -49,9 +56,7 @@ pub struct Engine {
   repl_mailbox: sync::mpsc::Sender<EngineMessage>,
   config: config::Config,
   state: EngineState,
-  scenario: Option<config::Scenario>,
-  env: Option<local_env::LocalEnv>,
-  ti: u64,
+  sim_state: SimulationState,
 }
 
 impl Engine {
@@ -60,14 +65,18 @@ impl Engine {
       repl_mailbox: sync::mpsc::Sender<EngineMessage>,
       config: config::Config,
     ) -> thread::JoinHandle<u32> {
+
+    let sim_state = SimulationState{
+      scenario: None,
+      env: None,
+      ti: 0,      
+    };
     let mut engine = Engine{
       engine_mailbox: engine_mailbox,
       repl_mailbox: repl_mailbox,
       config: config,
       state: EngineState::Main,
-      scenario: None,
-      env: None,
-      ti: 0,
+      sim_state: sim_state,
       };
     let builder = thread::Builder::new().name("Engine".into());
     let handle = builder.spawn(move || { engine.run(); 0 }).unwrap();
@@ -239,26 +248,22 @@ impl Engine {
         // Fetch and set the scenario parameters
         for scenario in self.config.scenarios.iter() {
           if scenario_name == scenario.name {
-            self.scenario = Some(scenario.clone());
-
-          // Instantiate the agents.
-          match scenario.starting_units {
-            Some(ref units) => {
-              for agent_description in units.iter() {
-                // TODO Give agents a random position.
-                let position = local_env::Position{ x: 0, y: 0 };
-                let agent = agent::Agent::new(agent_description.kind.clone(), position);
-                env.agents.add(agent);
+            self.sim_state.scenario = Some(scenario.clone());
+            // Instantiate the agents.
+            match scenario.starting_units {
+              Some(ref units) => {
+                for agent_description in units.iter() {
+                  // TODO Give agents a random position.
+                  let position = local_env::Position{ x: 0, y: 0 };
+                  let agent = agent::Agent::new(agent_description.kind.clone(), position);
+                  env.agents.add(agent);
+                }
               }
+              None => {}
             }
-            None => {}
-          }
-
           }
         }
-
-
-        self.env = Some(env);
+        self.sim_state.env = Some(env);
         return Ok(())
       }
       Err(why) => {
@@ -270,14 +275,14 @@ impl Engine {
 
   fn sim_frame(&mut self) {
     // TODO
-    self.ti += 1;
-    println!("Running simulation frame {}", self.ti);
+    self.sim_state.ti += 1;
+    println!("Running simulation frame {}", self.sim_state.ti);
     self.actions();
     self.resolve();
   }
 
   fn actions(&mut self) {
-    match self.env {
+    match self.sim_state.env {
       Some(ref mut env) => {
         for (id, agent) in env.agents.data.iter() {
           let percept = agent.percept();
@@ -293,7 +298,7 @@ impl Engine {
   }
 
   fn resolve(&mut self) {
-    match self.env {
+    match self.sim_state.env {
       Some(ref mut env) => {
         for (agent_id, action) in env.actions.data.iter() {
           match action.data {
@@ -303,6 +308,9 @@ impl Engine {
             action::ActionData::Move{ ref direction } => {
               println!("Agent {} moves {:?}.", agent_id, direction);
             },
+            action::ActionData::GoTo{ ref position } => {
+              println!("Agent {} goes to {:?}", agent_id, position);
+            }
           }
         }
         env.actions.clear();
