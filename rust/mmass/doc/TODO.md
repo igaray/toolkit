@@ -22,7 +22,21 @@
 [x] basic perceive-act loop with empty percepts and noop actions for all agents
 [x] pause sim
 [x] step through sim
+[ ] entity component system
+  [ ] reconcile global/local env and map with ecs 
+  [ ] make action function and percept constructor take a reference 
+      to the world state and the agent to figure out what it perceives
+  [ ] user input component, tie into joystick agent
+  [ ] move dynamic data components such as actions into the component manager
+  [ ] move systems out into their own modules
+  [ ] embodied agents
+  [ ] action pre and post condition checking and applying
+[ ] log to file
+[ ] simulation log system
+[ ] agent system
+  [ ] last action success type, including reason 
 [ ] list agents
+  [ ] state request engine message
 [ ] inspect agent
 [ ] starting location selection for agents
 [ ] write documentation in help command for all other commands
@@ -36,9 +50,6 @@
 [ ] percepts
   [ ] percept agents
   [ ] percept field of view
-[ ] entity component system
-  [ ] embodied agents
-  [ ] action pre and post condition checking and applying
 [ ] objects
   [ ] agent inventory
   [ ] action: pickup
@@ -64,7 +75,6 @@ Future work
 [ ] areas
 [ ] events
 [ ] effects
-[ ] collections
 [ ] polish
 [ ] tests
 [ ] coverage

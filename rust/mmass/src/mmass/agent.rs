@@ -27,17 +27,17 @@ pub struct Agent {
 }
 
 impl Agent {
-  pub fn new(kind: AgentKind, position: local_env::Position) -> Agent {
+  pub fn new(kind: &AgentKind, position: local_env::Position) -> Agent {
     let id = rand::random::<u64>();
     match kind {
-      AgentKind::Joystick => {
+      &AgentKind::Joystick => {
         return Agent{
           id: id,
           position: position,
           data: AgentData::Joystick{  }
         }
       }
-      AgentKind::Reactive => {
+      &AgentKind::Reactive => {
         return Agent{
           id: id,
           position: position,
@@ -47,11 +47,9 @@ impl Agent {
     }
   }
 
-  pub fn percept(&self) -> percept::Percept {
-    return percept::Percept::new()
-  }
-
-  pub fn action(&self, _percept: percept::Percept) -> action::Action {
+  pub fn action(&self) -> action::Action {
+    // TODO Make action function and percept constructor take a reference to the world state and the agent to figure out what it perceives.
+    let _percept = percept::Percept::new();
     return action::Action::new(self.id, action::ActionData::Noop)
   }
 }

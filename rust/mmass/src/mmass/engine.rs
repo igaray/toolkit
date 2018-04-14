@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::env;
 use std::fs;
+use std::path;
 use std::thread;
 use std::time;
 use std::sync;
@@ -12,11 +13,32 @@ use mmass::local_env as local_env;
 use mmass::agent as agent;
 use mmass::action as action;
 
-#[derive(Debug)]
-struct SimulationState {
+/* Component Manager
+ */
+#[derive(Debug, Deserialize, Serialize)]
+struct Components {
+  // TODO user input component, tie into joystick agent
+  // TODO move dynamic data components such as actions into the component manager
+  // 
+}
+
+// impl Components {
+//   pub fn new() -> Components {
+//     return Components
+//   }
+
+//   pub fn add() {}
+//   pub fn remove() {}
+//   pub fn clear() {}
+// }
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Simulation {
   pub scenario: Option<config::Scenario>,
   pub env: Option<local_env::LocalEnv>,
-  pub ti: u64,
+  pub fi: u64, // Frame index
+  pub ti: u64, // Time index
+  pub components: Components,
 }
 
 #[derive(Debug)]
@@ -34,7 +56,7 @@ pub enum EngineMessageResult {
 }
 
 /* Messages to the engine prefixed with 'Msg' do not expect a response.
- * Messagew prefixed with 'Req' are expected to be responded by the corresponding 'Res' message.
+ * Messagew prefixed with 'Req' expect a response message of the corresponding 'Res' type.
  */
 #[derive(Debug)]
 pub enum EngineMessage {
@@ -56,7 +78,7 @@ pub struct Engine {
   repl_mailbox: sync::mpsc::Sender<EngineMessage>,
   config: config::Config,
   state: EngineState,
-  sim_state: SimulationState,
+  sim: Simulation,
 }
 
 impl Engine {
@@ -65,18 +87,19 @@ impl Engine {
       repl_mailbox: sync::mpsc::Sender<EngineMessage>,
       config: config::Config,
     ) -> thread::JoinHandle<u32> {
-
-    let sim_state = SimulationState{
+    let sim = Simulation{
       scenario: None,
       env: None,
-      ti: 0,      
+      fi: 0,
+      ti: 0,
+      components: Components{},
     };
     let mut engine = Engine{
       engine_mailbox: engine_mailbox,
       repl_mailbox: repl_mailbox,
       config: config,
       state: EngineState::Main,
-      sim_state: sim_state,
+      sim: sim,
       };
     let builder = thread::Builder::new().name("Engine".into());
     let handle = builder.spawn(move || { engine.run(); 0 }).unwrap();
@@ -234,10 +257,7 @@ impl Engine {
   fn init_sim(&mut self, scenario_name: String, world_name: String) -> Result<(), ()> {
     println!("Initializing simulation...");
     // Deserialize the world
-    let mut world_path = env::current_dir().unwrap();
-    world_path.push("worlds");
-    world_path.push(&world_name);
-    world_path.set_extension("bin");
+    let world_path = world_path(&world_name);
 
     match fs::File::open(&world_path) {
       Ok(mut file) => {
@@ -248,14 +268,14 @@ impl Engine {
         // Fetch and set the scenario parameters
         for scenario in self.config.scenarios.iter() {
           if scenario_name == scenario.name {
-            self.sim_state.scenario = Some(scenario.clone());
+            self.sim.scenario = Some(scenario.clone());
             // Instantiate the agents.
             match scenario.starting_units {
               Some(ref units) => {
                 for agent_description in units.iter() {
                   // TODO Give agents a random position.
                   let position = local_env::Position{ x: 0, y: 0 };
-                  let agent = agent::Agent::new(agent_description.kind.clone(), position);
+                  let agent = agent::Agent::new(&agent_description.kind, position);
                   env.agents.add(agent);
                 }
               }
@@ -263,7 +283,7 @@ impl Engine {
             }
           }
         }
-        self.sim_state.env = Some(env);
+        self.sim.env = Some(env);
         return Ok(())
       }
       Err(why) => {
@@ -274,56 +294,85 @@ impl Engine {
   }
 
   fn sim_frame(&mut self) {
-    // TODO
-    self.sim_state.ti += 1;
-    println!("Running simulation frame {}", self.sim_state.ti);
-    self.actions();
-    self.resolve();
-  }
-
-  fn actions(&mut self) {
-    match self.sim_state.env {
-      Some(ref mut env) => {
-        for (id, agent) in env.agents.data.iter() {
-          let percept = agent.percept();
-          let action = agent.action(percept);
-          env.actions.add(*id, action);
-        }
-      }
-      None => {
-        error!("No environment!");
-        panic!();
-      }
-    }
-  }
-
-  fn resolve(&mut self) {
-    match self.sim_state.env {
-      Some(ref mut env) => {
-        for (agent_id, action) in env.actions.data.iter() {
-          match action.data {
-            action::ActionData::Noop => {
-              println!("Agent {} does nothing.", agent_id);
-            },
-            action::ActionData::Move{ ref direction } => {
-              println!("Agent {} moves {:?}.", agent_id, direction);
-            },
-            action::ActionData::GoTo{ ref position } => {
-              println!("Agent {} goes to {:?}", agent_id, position);
-            }
-          }
-        }
-        env.actions.clear();
-      }
-      None => {
-        error!("No environment!");
-        panic!();
-      }
-    }
+    self.sim.fi += 1;
+    println!("Running simulation frame {}", self.sim.fi);
+    physics(&mut self.sim);
+    events(&mut self.sim);
+    agents(&mut self.sim);
+    actions(&mut self.sim);
   }
 
   fn save_sim(&mut self) {
     // TODO
     println!("Saving simulation state...");
   }
+}
+
+// Systems
+// TODO Move systems out into their own modules
+
+fn physics(_sim: &mut Simulation) {
+  // TODO
+}
+
+fn events(_sim: &mut Simulation) {
+  // TODO
+}
+
+fn agents(sim: &mut Simulation) {
+  match sim.env {
+    Some(ref mut env) => {
+      // TODO hide the data component of agent and action containers
+      for (id, agent) in env.agents.data.iter() {
+        let action = agent.action();
+        env.actions.add(*id, action);
+      }
+    }
+    None => {
+      error!("No environment!");
+      panic!();
+    }
+  }
+}
+
+fn actions(sim: &mut Simulation) {
+  /*
+  for each action
+    if the action conflicts with other actions
+      resolve conflict and mark it as not done for the agent's next percept
+    else
+      if the action's precondition is true
+        apply the action's postcondition
+  */
+  match sim.env {
+    Some(ref mut env) => {
+      for (agent_id, action) in env.actions.data.iter() {
+        match action.data {
+          action::ActionData::Noop => {
+            println!("Agent {} does nothing.", agent_id);
+          },
+          action::ActionData::Move{ ref direction } => {
+            println!("Agent {} moves {:?}.", agent_id, direction);
+          },
+          action::ActionData::GoTo{ ref position } => {
+            println!("Agent {} goes to {:?}", agent_id, position);
+          }
+        }
+      }
+      env.actions.clear();
+    }
+    None => {
+      error!("No environment!");
+      panic!();
+    }
+  }
+}
+
+// Utilities
+fn world_path(name: &String) -> path::PathBuf {
+  let mut path = env::current_dir().unwrap();
+  path.push("worlds");
+  path.push(&name);
+  path.set_extension("bin");
+  return path
 }
