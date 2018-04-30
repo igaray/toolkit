@@ -11,6 +11,7 @@ use bincode;
 use mmass::config as config;
 use mmass::local_env as local_env;
 use mmass::agent as agent;
+use mmass::percept as percept;
 use mmass::action as action;
 
 /* Component Manager
@@ -19,7 +20,12 @@ use mmass::action as action;
 struct Components {
   // TODO user input component, tie into joystick agent
   // TODO move dynamic data components such as actions into the component manager
-  // 
+  pub names: Vec<String>,
+  pub positions: Vec<local_env::Position>,
+  pub directions: Vec<local_env::Direction>,
+  pub agents: Vec<agent::Agent>,
+  pub percept: Vec<percept::Percept>,
+  pub actions: Vec<action::Action>,
 }
 
 // impl Components {
