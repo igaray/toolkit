@@ -23,6 +23,9 @@
 [x] pause sim
 [x] step through sim
 [ ] entity component system
+  [ ] define components, entities and systems
+  [ ] implement component manager
+  [ ] implement system manager
   [ ] reconcile global/local env and map with ecs 
   [ ] make action function and percept constructor take a reference 
       to the world state and the agent to figure out what it perceives
