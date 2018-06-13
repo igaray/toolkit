@@ -1,8 +1,0 @@
----
-debug: true
-scenarios:
-  - name: basic
-    starting_units:
-      - kind: Reactive
-      - kind: Reactive
-      - kind: Reactive
