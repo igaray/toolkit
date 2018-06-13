@@ -22,6 +22,13 @@
 [x] basic perceive-act loop with empty percepts and noop actions for all agents
 [x] pause sim
 [x] step through sim
+[ ] list agents
+  [ ] state request engine message
+  [ ] inspect agent
+[ ] write documentation in help command for all other commands
+[ ] list scenarios, worlds and savefiles in alphabetical order
+[ ] make savefile name optional in save command, if none, save under default name
+
 [ ] entity component system
   [ ] define components, entities and systems
   [ ] implement component manager
@@ -32,20 +39,15 @@
   [ ] user input component, tie into joystick agent
   [ ] move dynamic data components such as actions into the component manager
   [ ] move systems out into their own modules
-  [ ] embodied agents
-  [ ] action pre and post condition checking and applying
-[ ] log to file
-[ ] simulation log system
-[ ] agent system
-  [ ] last action success type, including reason 
-[ ] list agents
-  [ ] state request engine message
-[ ] inspect agent
+  [ ] agent system
+    [ ] last action success type, including reason 
+    [ ] action pre and post condition checking and applying
+    [ ] embodied agents
+[ ] useful logging
+  [ ] log to file
+  [ ] simulation log system
 [ ] starting location selection for agents
-[ ] write documentation in help command for all other commands
-[ ] list scenarios, worlds and savefiles in alphabetical order
 [ ] save current sim
-[ ] make savefile name optional in save command, if none, save under default name
 [x] list existing savefiles
 [ ] deserialize a saved sim
 [ ] load sim
@@ -74,7 +76,7 @@
 
 Future work
 [ ] fix your time step
-[ ] gui: tcod
+[ ] gui: tcod?
 [ ] areas
 [ ] events
 [ ] effects
