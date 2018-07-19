@@ -5,6 +5,7 @@ use clap::{App, Arg};
 mod hello_world {
 
     pub fn run() {
+        println!("u32 [MIN, MAX] = [{},{}]", <u32>::min_value(), <u32>::max_value());
         // A simple integer calculator:
         // `+` or `-` means add or subtract by 1
         // `*` or `/` means multiply or divide by 2
