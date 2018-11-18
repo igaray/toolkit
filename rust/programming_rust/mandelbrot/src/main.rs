@@ -6,7 +6,6 @@ use image::ColorType;
 use image::png::PNGEncoder;
 use std::fs::File;
 use std::str::FromStr;
-use std::io::Write;
 
 /// Try to determine if `c` is in the Mandelbrot set, using at most `limit`
 /// iterations to decide.
@@ -116,8 +115,8 @@ fn write_image(filename: &str,
 fn main() {
   let args: Vec<String> = std::env::args().collect();
   if args.len() != 5 {
-    writeln!(std::io::stderr(), "Usage: mandelbrot FILE PXELS UPPERLEFT LOWERRIGHT").unwrap();
-    writeln!(std::io::stderr(), "Example: {} mandel.png 1000x750 -1.20,0.35 -1.0,0.20", args[0]).unwrap();
+    eprintln!("Usage: mandelbrot FILE PXELS UPPERLEFT LOWERRIGHT");
+    eprintln!("Example: {} mandel.png 1000x750 -1.20,0.35 -1.0,0.20", args[0]);
     std::process::exit(1);
   }
 
@@ -172,7 +171,7 @@ fn test_parse_complex() {
 fn test_pixel_to_point() {
   assert_eq!(
     pixel_to_point((100, 100), (25, 75), Complex{re: -1.0, im: 1.0}, Complex{re: 1.0, im: -1.0}),
-    Complex{re: -0.5, im: 2.5}
+    Complex{re: -0.5, im: -0.5}
     );
 }
 
