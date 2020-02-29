@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
 
+# start project
+# code: add atomic property to prevent splitting of tasks which make no sense
+# code: fix bug: routine does not accept days with no slots
+# code: extend lexer and parser to accept arbitrary text lines to be able to insert notes and tables
+# code: make active/inactive and completion markers optional in entries
+# code: update support new yaml format
+# data: input missing pages entries
+# data: finish task decomposition
+# data: hacer lugar en la rutina para compras, mandados, cocinar, limpiar y lavar, ocio, etc
+# data: asignar duraciones realistas a todas las tareas
+# data: agregar charlas y videos
+# data: agregar libros digitales que quiero leer
+# data: agregar libros de casa que quiero leer
+# data: agregar series y peliculas
+# data: agregar cursos de coursera y edx
+
 # TODO / GOALS / PROJECTS / SUBPROJECTS / TASKS / SUBTASKS
 # ROUTINE / DAY / SLOT / SCHEDULE
 #
