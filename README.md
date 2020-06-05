@@ -1,3 +1,3 @@
-# My Code Toolkit
+# Toolkit
 
 Useful code snippets I've written or modified.
