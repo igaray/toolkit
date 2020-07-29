@@ -1,0 +1,8 @@
+[book]
+authors = ["Iñaki Garay"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Algorithms and Data Structures in Rust"
+[output.html]
+theme = "src/theme"
