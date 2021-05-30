@@ -46,11 +46,11 @@ def par_mas_cercano_en_franja(franja, n, d):
     return distancia_minima
 
 def particionar(P, n):
-    mid = n // 2
-    puntoMedio = P[mid]
-    Pl = P[:mid]
-    Pr = P[mid:]
-    return (mid, puntoMedio, Pl, Pr)
+    medio = n // 2
+    puntoMedio = P[medio]
+    Pl = P[:medio]
+    Pr = P[medio:]
+    return (medio, puntoMedio, Pl, Pr)
 
 def combinar(n, Pl, Pr, dl, dr, puntoMedio, Q):
     d = min(dl, dr)
@@ -87,6 +87,11 @@ def par_mas_cercano_dyc_2(P):
 
 
 def generar_datos(n):
+    """
+    Esta funcion genera una lista de puntos aleatorios.
+    Las coordenadas de los puntos se encuentran en el rango [1, 10^9].
+    La cantidad de elementos en la lista es una potencia de n, siendo n el valor pasado por parametro.
+    """
     import random
     return [ Punto(random.randint(1, 10**9), random.randint(1, 10**9)) for _ in range(2**n) ]
 
