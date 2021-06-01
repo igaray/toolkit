@@ -10,8 +10,10 @@ class Punto:
     def __repr__(self):
         return f"({self.x},{self.y})"
 
+
 def distancia(p1, p2):
     return math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+
 
 def par_mas_cercano_fb_aux(P, n):
     puntos = None
@@ -19,21 +21,15 @@ def par_mas_cercano_fb_aux(P, n):
     for i in range(n):
         for j in range(i + 1, n):
             d = distancia(P[i], P[j])
-            # print(f"{P[i]} <-> {P[j]} == {d}")
             if d < distancia_minima:
                 distancia_minima = d
                 puntos = (P[i], P[j])
-    print(f"Puntos mas cercanos: {puntos[0]} y {puntos[1]}")
     return distancia_minima
 
 
 def par_mas_cercano_fb(P):
     n = len(P)
     return par_mas_cercano_fb_aux(P, n)
-
-
-def par_mas_cercano_dyc_1(p):
-    pass
 
 
 def par_mas_cercano_en_franja(franja, n, d):
@@ -45,12 +41,14 @@ def par_mas_cercano_en_franja(franja, n, d):
             j += 1
     return distancia_minima
 
+
 def particionar(P, n):
     medio = n // 2
     puntoMedio = P[medio]
     Pl = P[:medio]
     Pr = P[medio:]
     return (medio, puntoMedio, Pl, Pr)
+
 
 def combinar(n, Pl, Pr, dl, dr, puntoMedio, Q):
     d = min(dl, dr)
@@ -62,20 +60,26 @@ def combinar(n, Pl, Pr, dl, dr, puntoMedio, Q):
             franjaP.append(lr[i])
         if abs(Q[i].x - puntoMedio.x) < d:
             franjaQ.append(Q[i])
- 
     franjaP.sort(key = lambda point: point.y)
     min_a = min(d, par_mas_cercano_en_franja(franjaP, len(franjaP), d))
     min_b = min(d, par_mas_cercano_en_franja(franjaQ, len(franjaQ), d))
     return min(min_a, min_b)
 
-def par_mas_cercano_dyc_2_aux(P, Q, n):
+def par_mas_cercano_dyc_aux(P, Q, n):
     if n <= 3:
         return par_mas_cercano_fb(P)
     medio, puntoMedio, Pl, Pr = particionar(P, n)
-    dl = par_mas_cercano_dyc_2_aux(Pl, Q, medio)
-    dr = par_mas_cercano_dyc_2_aux(Pr, Q, n - medio)
+    dl = par_mas_cercano_dyc_aux(Pl, Q, medio)
+    dr = par_mas_cercano_dyc_aux(Pr, Q, n - medio)
     resultado = combinar(n, Pl, Pr, dl, dr, puntoMedio, Q)
     return resultado
+
+
+def par_mas_cercano_dyc_1(p):
+    n = len(P)
+    P.sort(key = lambda punto: punto.x)
+    Q = copy.deepcopy(P)
+    return par_mas_cercano_dyc_aux(P, Q, n)
 
 
 def par_mas_cercano_dyc_2(P):
@@ -83,7 +87,7 @@ def par_mas_cercano_dyc_2(P):
     P.sort(key = lambda punto: punto.x)
     Q = copy.deepcopy(P)
     Q.sort(key = lambda punto: punto.y)   
-    return par_mas_cercano_dyc_2_aux(P, Q, n)
+    return par_mas_cercano_dyc_aux(P, Q, n)
 
 
 def generar_datos(n):
