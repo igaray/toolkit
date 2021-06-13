@@ -31,6 +31,12 @@ pub struct MaxHeap {
     values: Vec<usize>,
 }
 
+impl From<MaxHeap> for Vec<usize> {
+    fn from(h: MaxHeap) -> Self {
+        h.values
+    }
+}
+
 impl MaxHeap {
     /// Creates a new, empty max heap.
     pub fn new() -> MaxHeap {
@@ -62,16 +68,15 @@ impl MaxHeap {
     }
 
     /// Sorts a vector in-place by building a max heap.
-    pub fn sort(v: &mut Vec<usize>) {
-        println!("Building the heap");
+    pub fn sort(v: &mut Vec<usize>) -> Vec<usize> {
         let mut h = MaxHeap::from_vec(v.to_owned());
         let n = h.values.len();
-        println!("Sorting the array");
         for i in (1..n).rev() {
             h.values.swap(0, i);
             h.size -= 1;
             h.max_heapify_rec(0);
         }
+        return h.values.clone()
     }
 
     /// Pushes a new value onto the heap.
@@ -94,15 +99,12 @@ impl MaxHeap {
         // i is the initial node whose heap property we wish to restore.
         // j
         // k
-        println!("max_heapify({})", i);
         let n = self.size;
         let mut k = i;
-        println!("parent({}) = {}", i, crate::parent(i));
         loop {
             let j = k;
             let l = crate::left(j);
             let r = crate::right(j);
-            println!("\t\ti: {}\tj: {}\tr: {}\tl: {}\t", i, j, r, l);
             // Se busca el hijo con mayor valor del nodo j
             // Verificar si el hijo izquierdo existe y su valor es mayor que el del nodo i
             if l < n && self.values[k] < self.values[l] {
@@ -123,40 +125,24 @@ impl MaxHeap {
 
     #[allow(dead_code)]
     fn max_heapify_rec(self: &mut MaxHeap, i: usize) {
-        println!("max_heapify({})", i);
         let n = self.size;
         let l = crate::left(i);
         let r = crate::right(i);
-        let max = if l < n && self.values[l] > self.values[i] {
-            l
-        } else if r < n && self.values[r] > self.values[i] {
-            r
+        let mut max; 
+        if l < n && self.values[l] > self.values[i] {
+            max = l
         } else {
-            i
-        };
-        println!("\tn: {}, i: {}, l: {}, r: {}, max: {}", n, i, l, r, max);
-        // println!(
-        //     "of the three values: A[{}]={}, A[{}]={}, A[{}]={}, the index of the max is {}",
-        //     i, self.values[i], l, self.values[l], r, self.values[r], max
-        // );
-        println!("\tamong these values:");
-        println!("\t\tA[{}]={}", i, self.values[i]);
-        if l < n {println!("\t\tA[{}]={}", l, self.values[l])};
-        if r < n {println!("\t\tA[{}]={}", r, self.values[r])};
-        println!("\t\tthe index of the max is {}", max);
+            max = i
+        } 
+        if r < n && self.values[r] > self.values[max] {
+            max = r
+        }
         if i != max {
-            println!(
-                "\tswapping A[{}]={} and A[{}]={}",
-                i, self.values[i], max, self.values[max]
-            );
             self.values.swap(i, max);
-            println!("\tA: {:?}", self.values);
             self.max_heapify_rec(max);
         }
     }
 }
-
-// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 pub struct UnionFind {}
@@ -408,30 +394,41 @@ mod tests {
     use crate::GraphRepresentationKind;
     use crate::MaxHeap;
 
-    // #[test]
-    // fn scratch_test() {
-    // let v = vec!['a', 'b', 'c', 'd', 'e'];
-    // for (i, x) in v.iter().enumerate() {
-    //     println!("{}: {}", i, x);
-    // }
+    /*
+    #[test]
+    fn scratch_test() {
+    let v = vec!['a', 'b', 'c', 'd', 'e'];
+    for (i, x) in v.iter().enumerate() {
+        println!("{}: {}", i, x);
+    }
     // let n = 10;
     // for i in (0..((n/2)-1)).rev() {
     //     println!("{}", i);
     // }
-    // }
+    }
+    */
 
     #[test]
-    fn heap_test() {
-        // println!("i\tp(i)\tl(i)\tr(i)");
-        // for i in 0..=10 {
-        //     println!("{}\t{}\t{}\t{}", i, Heap::parent(i), Heap::left(i), Heap::right(i));
-        // }
+    fn heap_index_test() {
+        println!("heap_index_test");
+        for i in 0..=16 {
+           println!("{}\t{}\t{}\t{}", i, crate::parent(i), crate::left(i), crate::right(i));
+        }
+    }
+
+    #[test]
+    fn max_heapify_test() {
+        let v = vec![18, 14, 16, 20, 21, 26, 25, 2, 29, 4, 17];
+        let h = MaxHeap::from_vec(v);
+        let v2: Vec<usize> = h.into();
+        assert_eq!(v2, &[29, 20, 26, 18, 21, 16, 25, 2, 14, 4, 17]);
+    }
+
+    #[test]
+    fn heapsort_test() {
         let mut v = vec![18, 14, 16, 20, 21, 26, 25, 2, 29, 4, 17];
-        println!("A: {:?}", v);
-        // let h = Heap::with_vec(v);
-        // println!("{:?}", h);
-        MaxHeap::sort(&mut v);
-        assert_eq!(v, &[2, 4, 14, 16, 17, 18, 20, 21, 25, 26, 29]);
+        let v2 = MaxHeap::sort(&mut v);
+        assert_eq!(v2, &[2, 4, 14, 16, 17, 18, 20, 21, 25, 26, 29]);
     }
 
     // #[test]
