@@ -16,15 +16,7 @@ impl UnionFind {
         UnionFind { id, sz }
     }
 
-    pub fn with_capacity(capacity: usize) -> UnionFind {
-        UnionFind {
-            id: Vec::with_capacity(capacity),
-            sz: Vec::with_capacity(capacity),
-        }
-    }
-
-    pub fn from_pairs(pairs: Vec<(usize, usize)>) -> UnionFind {
-        let size = pairs.len();
+    pub fn from_pairs(size: usize, pairs: Vec<(usize, usize)>) -> UnionFind {
         let mut id = vec![0; size];
         let sz = vec![1; size];
         for i in 0..id.len() {
@@ -34,26 +26,44 @@ impl UnionFind {
         for (p, q) in pairs.iter() {
             uf.union(*p, *q);
         }
-        return uf
+        return uf;
     }
 
-    pub fn union(self: &mut Self, _p: usize, _q: usize) {
-        unimplemented!()
-    }
-
-    pub fn connected(self: &Self, p: usize, q: usize) -> bool {
-        self.id[p] == self.id[q]
-    }
-
-    pub fn find(self: &Self, _p: usize) -> usize {
-        unimplemented!()
-    }
-
+    // Number of connected components. Maximal set of objects that are mutually connected.
     pub fn count(self: &Self) -> usize {
         unimplemented!()
     }
 
-    // Quick-Find Eager Approach
+    // We assume "is connected to" is an equivalence relation:
+    // - Reflexive: p is connected to p.
+    // - Symmetric: if p is connected to q, then q is connected to p.
+    // - Transitive: if p is connected to q and q is connected to r, then p is connected to r.
+    pub fn connected(self: &Self, p: usize, q: usize) -> bool {
+        self.weighted_quick_union_connected(p, q)
+    }
+
+    // Union command. Replace components containing two objects with their union.
+    pub fn union(self: &mut Self, p: usize, q: usize) {
+        self.weighted_quick_union(p, q)
+    }
+
+    // Find query. Check if two objects are in the same component
+    pub fn find(self: &Self, p: usize) -> usize {
+        self.weighted_quick_union_find(p)
+    }
+
+    // ------------------------------------------------------------------------
+    // Quick-Find
+    #[allow(dead_code)]
+    fn quick_find_connected(self: &Self, p: usize, q: usize) -> bool {
+        if self.id[p] == self.id[q] {
+            println!("{} and {} are connected", p, q)
+        } else {
+            println!("{} and {} are not connected", p, q)
+        }
+        self.id[p] == self.id[q]
+    }
+
     #[allow(dead_code)]
     fn quick_find(self: &Self, p: usize) -> usize {
         self.id[p]
@@ -61,16 +71,23 @@ impl UnionFind {
 
     #[allow(dead_code)]
     fn quick_find_union(self: &mut Self, p: usize, q: usize) {
-        let qid = self.id[q];
-        let pid = self.id[p];
-        for i in 0..self.id.len() {
-            if pid == self.id[i] {
-                self.id[i] = qid;
-            }
-        }
+        if !self.connected(p, q) {
+            println!("connecting {} and {}", p, q);
+            println!("  {:?}", self.id);
+            let qid = self.id[q];
+            let pid = self.id[p];
+            println!("  pid = id[p = {}] = {} , qid = id[q = {}] = {}", p, pid, q, qid);
+            for i in 0..self.id.len() {
+                if pid == self.id[i] {
+                    println!("  setting id[{}] = {}", i, qid);
+                    self.id[i] = qid;
+                }
+            }    
+        } 
     }
 
-    // Quick-Union Approach
+    // ------------------------------------------------------------------------
+    // Quick-Union
     #[allow(dead_code)]
     fn root(self: &Self, i: usize) -> usize {
         let mut r = i;
@@ -82,7 +99,15 @@ impl UnionFind {
 
     #[allow(dead_code)]
     fn quick_union_connected(self: &Self, p: usize, q: usize) -> bool {
-        self.root(p) == self.root(q)
+        let rp = self.root(p);
+        let rq = self.root(q);
+        let connected = rp == rq;
+        if connected {
+            println!("{} and {} are connected", p, q)
+        } else {
+            println!("{} and {} are not connected", p, q)
+        }
+        connected
     }
 
     #[allow(dead_code)]
@@ -92,14 +117,28 @@ impl UnionFind {
 
     #[allow(dead_code)]
     fn quick_union(self: &mut Self, p: usize, q: usize) {
-        let i = self.root(p);
-        let j = self.root(q);
-        self.id[i] = j;
+        let rp = self.root(p);
+        let rq = self.root(q);
+        println!("connecting {} and {}", p, q);
+        println!("  root[p = {}] = {} , root[q = {}] = {}", p, rp, q, rq);
+        println!("  setting id[{}] = {}", rp, rq);
+        self.id[rp] = rq;
     }
 
+    // ------------------------------------------------------------------------
     // Weighted Quick-Union
     // root() and quick_union_find() are identical
     // quick_union() is modified to link root of smaller tree to root of larger tree and update the sz vector.
+    #[allow(dead_code)]
+    fn weighted_quick_union_connected(self: &Self, p: usize, q: usize) -> bool {
+        self.quick_union_connected(p, q)
+    }
+        
+    #[allow(dead_code)]
+    fn weighted_quick_union_find(self: &Self, p: usize) -> usize {
+        self.root(p)
+    }
+
     #[allow(dead_code)]
     fn weighted_quick_union(self: &mut Self, p: usize, q: usize) {
         let i = self.root(p);
@@ -113,6 +152,7 @@ impl UnionFind {
         }
     }
 
+    // ------------------------------------------------------------------------
     // Full Path Compression
     // add second loop to root() to set the id[] of each examined node to the root
     #[allow(dead_code)]
@@ -140,6 +180,9 @@ impl UnionFind {
         }
         return r;
     }
+
+    fn weighted_quick_union_full_path_compression() {}
+    fn weighted_quick_union_half_path_compression() {}
 }
 
 #[cfg(test)]
@@ -148,7 +191,34 @@ mod tests {
 
     #[test]
     fn union_find_test() {
-        let uf = UnionFind::new(10);
-        println!("{:?}", uf);
+        let pairs = Vec::from([
+            (4, 3),
+            (3, 8),
+            (6, 5),
+            (9, 4),
+            (2, 1),
+            (8, 9),
+            (5, 0),
+            (7, 2),
+            (6, 1),
+            (1, 0),
+            (6, 7),
+        ]);
+        let uf = UnionFind::from_pairs(10, pairs);
+        println!("{:?}", uf.id);
+        assert!(uf.connected(4, 3));
+        assert!(uf.connected(3, 8));
+        assert!(uf.connected(6, 5));
+        assert!(uf.connected(9, 4));
+        assert!(uf.connected(2, 1));
+        assert!(uf.connected(8, 9));
+        assert!(uf.connected(5, 0));
+        assert!(uf.connected(7, 2));
+        assert!(uf.connected(6, 1));
+        assert!(uf.connected(1, 0));
+        assert!(uf.connected(6, 7));
+
+        let uf = UnionFind::new(11);
+        println!("{:?}", uf.id);
     }
 }

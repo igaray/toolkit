@@ -243,11 +243,7 @@ fn bfs_visit(g: &Graph, t: &mut Traversal, q: &mut VecDeque<usize>) {
 #[cfg(test)]
 #[allow(unused_imports)]
 mod tests {
-    use crate::bfs;
-    use crate::heap::MinHeap;
-    use crate::Graph;
-    use crate::GraphKind;
-    use crate::GraphRepresentationKind;
+    use super::*;
 
     /*
     #[test]
