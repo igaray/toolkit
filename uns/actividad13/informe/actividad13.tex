@@ -1,23 +1,201 @@
 \documentclass[12pt, a4paper]{article}
 \usepackage[utf8]{inputenc}
+% \usepackage[spanish]{babel}
 
-\title{Tesina}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{lipsum}
+
+\usepackage{amsthm}
+\newtheorem{theorem}{Teorema}[section]
+\newtheorem{lemma}[theorem]{Lema}
+
+\usepackage{minted}
+\newminted{cpp}{}
+\newmintinline{cpp}{}
+
+\title{UNS Algoritmos y Complejidad 2021 Actividad 13}
 \author{Iñaki Garay}
-\date{Septiembre 2020}
+\date{3 de Julio 2021}
 
 \begin{document}
-Grupo: T
 
-Integrantes: Iñaki Garay L.U. 67387
+\maketitle
 
-Usuario en HackerRank: @igarai 
+\begin{itemize}
+\item \textit{Grupo}: T
+\item \textit{Integrantes}: Iñaki Garay L.U. 67387
+\item \textit{Usuario HackerRank}: \texttt{@igarai}
+\end{itemize}
 
+\section{Implementación}
+
+\begin{minted}[fontsize=\small]{cpp}
+#include <algorithm>
+#include <iostream>
+#include <limits>
+#include <queue>
+#include <vector>
+
+using namespace std;
+
+const int INF = numeric_limits<int>::max();
+
+typedef struct max_flow_problem {
+    int n, m, s, t;
+    vector< vector<int> > residual;
+    vector< vector<int> > adj;
+} max_flow_problem;
+
+max_flow_problem p;
+
+void input() {
+    cin >> p.n >> p.m;
+    cin >> p.s >> p.t;
+    p.s--;
+    p.t--;
+    p.residual = vector< vector<int> >(p.n);
+    for (int i = 0; i < p.n; i++) {
+        p.residual[i] = vector<int>(p.n, 0);
+    }
+    p.adj = vector< vector<int> >(p.n);
+    for (int i = 0; i < p.n; i++) {
+        p.adj[i] = vector<int>();
+    }
+    for (int i = 0; i < p.m; i++) {
+        int u, v, c;
+        cin >> u >> v >> c;
+        u--;
+        v--;
+        p.residual[u][v] = c;
+        if (find(p.adj[u].cbegin(), p.adj[u].cend(), v) == p.adj[u].end()) {
+            p.adj[u].push_back(v);
+        }
+        if (find(p.adj[v].cbegin(), p.adj[v].cend(), u) == p.adj[v].end()) {
+            p.adj[v].push_back(u);
+        }
+    }
+}
+
+bool bfs(vector<int> &parent) {
+    fill(parent.begin(), parent.end(), -1);
+    vector<bool> visited = vector<bool>(p.n, false);
+
+    queue<int> q;
+    q.push(p.s);
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        for (int v : p.adj[u]) {
+            if (!visited[v] && p.residual[u][v] > 0) {
+                parent[v] = u;
+                visited[v] = true;
+                if (v == p.t) {
+                    return true;
+                }
+                q.push(v);
+            }
+        }
+    }
+    return false;
+}
+
+int edmonds_karp() {
+    int max_flow = 0;
+    int path_flow = INF;
+    vector<int> parent(p.n);
+
+    while (bfs(parent)) {
+		int path_flow = INF;
+		for (int v = p.t; v != p.s; v = parent[v]) {
+			int u = parent[v];
+			path_flow = min(path_flow, p.residual[u][v]);
+		}
+        for (int v = p.t; v != p.s; v = parent[v]) {
+            int u = parent[v];
+            p.residual[u][v] -= path_flow;
+            p.residual[v][u] += path_flow;
+        }
+        max_flow += path_flow;
+    }
+    return max_flow;
+}
+
+int main() {
+    input();
+    cout << edmonds_karp();
+    return 0;
+}
+\end{minted}
+
+\section{Análisis del Tiempo de Ejecución}
+
+El algoritmo de Edmonds-Karp es una instancia del método de Ford-Fulkerson en el cual la búsqueda del camino de aumento $p$ se hace mediante una búsqueda por niveles comenzando por $s$.
+
+El recorrido por niveles permite encontrar los caminos mínimos(en cuanto a cantidad de arcos) desde el origen a cada nodo entonces en la red residual, el camino mínimo ya no existe. Estopermite ajustar la cantidad de iteraciones del ciclo WHILE.
+
+Edmonds-Karp is identical to Ford-Fulkerson except for one very important trait. 
+The search order of augmenting paths is well defined. As a refresher from the Ford-Fulkerson wiki, augmenting paths, along with residual graphs, are the two important concepts to understand when finding the max flow of a network.
+
+Augmenting paths are simply any path from the source to the sink that can currently take more flow. 
+Over the course of the algorithm, flow is monotonically increased. 
+So, there are times when a path from the source to the sink can take on more flow, and that is an augmenting path.
+
+Edmonds-Karp differs from Ford-Fulkerson in that it chooses the next augmenting path using breadth-first search (bfs). 
+So, if there are multiple augmenting paths to choose from, Edmonds-Karp will be sure to choose the shortest augmenting path from the source to the sink.
+
+The complexity can be given independently of the maximal flow. The algorithm runs in O(VE2) time, even for irrational capacities. 
+The intuition is, that every time we find an augmenting path one of the edges becomes saturated, and the distance from the edge to s will be longer, if it appears later again in an augmenting path. 
+And the length of a simple paths is bounded by V
+
+\begin{lemma}
+En el algoritmo Edmonds-Karp, si $v \in N - {s,t}$ entonces la distancia mínima \texttt{nivel[v]} en $G_{f}$ no disminuye con cada aumento de flujo.
+\end{lemma}
+
+\begin{theorem}
+El algoritmo Edmonds-Karp en $G =\langle N,A \rangle$ toma $\O(na)$ iteraciones.
+\end{theorem}
+
+Demostracion
+
+\begin{proof}
+Se muestra que cada arco $(u,v)$ puede ser crítico (esto es, coincide con la capacidad residual) a lo sumo $n/2-1$ veces.
+
+Sea $i$ la iteración donde $(u,v)$ es crítico, y $j$ la iteración donde $(v,u)$ es crítico, 
+
+luego $nivel_{j}[u] = nivel_{j}[v] + 1 \geq	nivel_{i}[v] + 1 = nivel_{i}[u] + 2$,
+
+usando el lema. 
+
+Con lo que la distancia mínima de $u$ aumenta al menos en 2 entre cada para de iteraciones donde $(u,v)$ es arco crítico.
+
+Y $(n-2)$ es una cota de la máxima distancia mínima.
+
+Entonces como hay $\O(a)$ pares de vértices, no puede haber más de $\O(na)$ iteraciones.
+\end{proof}
+
+- como cada iteración (construir el grafo residual, hacer BFS,encontrar el camino de aumento y la capacidad residual, y actualizar el flujo) del algoritmo EK toma de O(a), de acuerdo al teorema anterior el tiempo total de ejecución es de O(na2) 
+
+- se elimina de esta forma la dependencia del tiempo de ejecución en $f$*.
+
+Edmonds-Karp relies on many of the proofs and complexities that were described for Ford-Fulkerson. 
+
+To prove that this implementation runs in $\O(V \cdot E^2)$, two statements must be shown to be true. 
+
+The first is that on each iteration of the algorithm, the shortest path between the source and all other vertices in the residual graph must increase monotonic. 
+That is, it is always increasing. 
+
+The second is that total number of flow augmentations is $\O(V \cdot E)$. 
+
+If it is true that the shortest path is always increasing in the residual graph (and therefore decreasing in the original graph), and that there are at most $V \cdot E$ flow augmentations, then the bound on the complexity will be well defined. 
+
+\section{Notas}
 De manera anecdotica, hubo dos bugs notables durante la implementacion del algoritmo.
 
 - infinity bug
 
 - bfs flow calculation bug
-
-\section{Analisis del Tiempo de Ejecucion}
 
 \end{document}
