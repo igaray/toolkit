@@ -112,15 +112,14 @@ bool bfs(vector<int> &parent) {
 
 int edmond_karp() {
     int max_flow = 0;
-    int path_flow = INF;
     vector<int> parent(p.n);
 
     while (bfs(parent)) {
-		int path_flow = INF;
-		for (int v = p.t; v != p.s; v = parent[v]) {
-			int u = parent[v];
-			path_flow = min(path_flow, p.residual[u][v]);
-		}
+        int path_flow = INF;
+        for (int v = p.t; v != p.s; v = parent[v]) {
+            int u = parent[v];
+            path_flow = min(path_flow, p.residual[u][v]);
+        }
         for (int v = p.t; v != p.s; v = parent[v]) {
             int u = parent[v];
             p.residual[u][v] -= path_flow;

@@ -1,6 +1,6 @@
 \documentclass[12pt, a4paper]{article}
 \usepackage[utf8]{inputenc}
-% \usepackage[spanish]{babel}
+\usepackage[spanish]{babel}
 
 \usepackage{array}
 \usepackage{tabularx}
@@ -154,11 +154,12 @@ And the length of a simple paths is bounded by V
 En el algoritmo Edmonds-Karp, si $v \in N - {s,t}$ entonces la distancia mínima \texttt{nivel[v]} en $G_{f}$ no disminuye con cada aumento de flujo.
 \end{lemma}
 
+\begin{proof}
+\end{proof}
+
 \begin{theorem}
 El algoritmo Edmonds-Karp en $G =\langle N,A \rangle$ toma $\O(na)$ iteraciones.
 \end{theorem}
-
-Demostracion
 
 \begin{proof}
 Se muestra que cada arco $(u,v)$ puede ser crítico (esto es, coincide con la capacidad residual) a lo sumo $n/2-1$ veces.
