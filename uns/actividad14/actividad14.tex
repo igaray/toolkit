@@ -1,20 +1,29 @@
 \documentclass[12pt, a4paper]{article}
 \usepackage[utf8]{inputenc}
-% \usepackage[spanish]{babel}
+\usepackage{titling}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\usepackage[spanish]{babel}
 
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{lipsum}
+\usepackage{hyperref}
 
 \usepackage{amsthm}
 \newtheorem{theorem}{Teorema}[section]
 \newtheorem{lemma}[theorem]{Lema}
 
 \usepackage{minted}
-\newminted{cpp}{}
-\newmintinline{cpp}{}
+\newminted{rust}{}
+\newmintinline{rust}{}
 
-\title{UNS Algoritmos y Complejidad 2021 Actividad 14}
+\title{
+    \includegraphics[height=0.2\textwidth]{uns-logo}
+    \includegraphics[height=0.2\textwidth]{dcic-logo} \\
+    UNS Algoritmos y Complejidad 2021 Actividad 14 \\
+    \large{Aplicaciones de Componentes Fuertemente Conexos en Compiladores}
+    }
 \author{Iñaki Garay L.U. 67387}
 \date{Julio 2021}
 
@@ -22,8 +31,133 @@
 
 \maketitle
 
-\begin{verbatim}
+% á é í ó ú ñ
 
-\end{verbatim}
+\section{Introducción}
+Este informe documenta tres aplicaciones del algoritmo para encontrar \textbf{Componentes Fuertemente Conexos} en el contexto de compiladores de lenguajes de programación.
+
+Las primeras dos aplicaciones, la planificación de paralelismo a nivel de instrucciones para aprovechar recursos de microprocesador (\textit{instruction-level parallelism scheduling}), y el ánalisis de punteros sensible al contexto, son aplicaciones tradicionales y conocidas. 
+El último ejemplo, el uso de CFCs en el grafo de flujo de llamadas (\textit{call-flow graph}) para mejorar el análisis estatico en el compilador de Rust, es más novedoso.
+
+A graph is said to be strongly connected if every vertex in the graph is reachable from every other vertex.
+
+\section{Planificación de Paralelismo a Nivel de Instrucciones}
+
+\subsection{Contexto}
+
+\subsection{Aplicación}
+
+\section{Análisis de Punteros Sensible al Contexto}
+
+\subsection{Contexto}
+
+\subsection{Aplicación}
+
+\section{El \textit{borrow-checker} de Rust}
+
+\subsection{Contexto}
+
+El lenguaje de programación Rust es un lenguaje moderno, de propósito general, compilado, con tipado estático, que ocupa el mismo espacio que C++. Tiene   una caracteristica particular: esta diseñado para garantizar que el acceso a memoria es \textit{seguro} (\textit{i.e.} no es posible punteros nulos o punteros colgantes) a pesar de utilizar manejo de memoria manual ni automatizado. 
+
+Para esto se vale del analisis estatico mediante su sistema de tipos, el cual incluye una fase denominado el \textit{borrow-checker}. 
+Este sistema hace valer tres reglas en todo momento: 
+
+\begin{enumerate}
+\item Cada valor tiene una variable llamada su dueña.
+\item Solo puede haber una dueña a la vez.
+\item Cuando una dueña sale de alcance, el valor sera destruido (\textit{i.e.} su memoria es liberada y el valor no puede ser utilizado).
+\end{enumerate}
+
+Estas reglas aseguran varias propiedades:
+
+\begin{enumerate}
+\item Todas las variables estan inicializadas antes de ser usadas. 
+\item No se puede mover un mismo valor dos veces.
+\item No se puede mover un valor que ha sido prestado.
+\item No se puede acceder una locacion de memoria mientras ha sido prestada de manera mutable (salvo a traves de una referencia mutable).
+\item No se puede mutar una locacion de memoria That you can't mutate a place while it is immutably borrowed.
+\end{enumerate}
+
+El compilador de Rust convierte el codigo fuente sucesivamente en distintas representaciones intermedias, hasta llegar al MIR (\textit{Mid-level Intermediate Representation}), una representacion intermedia basada en un grafo de flujo de llamadas. Sobre esta reprepresentacion en forma de grafo se verifican las propiedades de las cuales es responsable el borrow-checker.
+
+A modo de ejemplo, el siguiente
+
+\begin{minted}[fontsize=\small]{rust}
+fn main() {
+    let mut vec = Vec::new();
+    vec.push(1);
+    vec.push(2);
+}
+\end{minted}
+
+\url{https://play.rust-lang.org/?gist=30074856e62e74e91f06abd19bd72ece&version=stable}
+
+\begin{minted}[fontsize=\small]{rust}
+fn main() -> () {
+    let mut _0: ();                      // return place in scope 0 at src/main.rs:1:11: 1:11
+    let mut _1: std::vec::Vec<i32>;      // in scope 0 at src/main.rs:2:9: 2:16
+    let _2: ();                          // in scope 0 at src/main.rs:3:5: 3:16
+    let mut _3: &mut std::vec::Vec<i32>; // in scope 0 at src/main.rs:3:5: 3:8
+    let _4: ();                          // in scope 0 at src/main.rs:4:5: 4:16
+    let mut _5: &mut std::vec::Vec<i32>; // in scope 0 at src/main.rs:4:5: 4:8
+    scope 1 {
+        debug vec => _1;                 // in scope 1 at src/main.rs:2:9: 2:16
+    }
+
+    bb0: {
+        _1 = Vec::<i32>::new() -> bb1;   // scope 0 at src/main.rs:2:19: 2:29
+                                         // mir::Constant
+                                         // + span: src/main.rs:2:19: 2:27
+                                         // + user_ty: UserType(0)
+                                         // + literal: Const { ty: fn() -> std::vec::Vec<i32> {std::vec::Vec::<i32>::new}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        _3 = &mut _1;                    // scope 1 at src/main.rs:3:5: 3:8
+        _2 = Vec::<i32>::push(move _3, const 1_i32) -> [return: bb2, unwind: bb5]; // scope 1 at src/main.rs:3:5: 3:16
+                                         // mir::Constant
+                                         // + span: src/main.rs:3:9: 3:13
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::vec::Vec<i32>, i32) {std::vec::Vec::<i32>::push}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb2: {
+        _5 = &mut _1;                    // scope 1 at src/main.rs:4:5: 4:8
+        _4 = Vec::<i32>::push(move _5, const 2_i32) -> [return: bb3, unwind: bb5]; // scope 1 at src/main.rs:4:5: 4:16
+                                         // mir::Constant
+                                         // + span: src/main.rs:4:9: 4:13
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::vec::Vec<i32>, i32) {std::vec::Vec::<i32>::push}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb3: {
+        _0 = const ();                   // scope 0 at src/main.rs:1:11: 5:2
+        drop(_1) -> bb4;                 // scope 0 at src/main.rs:5:1: 5:2
+    }
+
+    bb4: {
+        return;                          // scope 0 at src/main.rs:5:2: 5:2
+    }
+
+    bb5 (cleanup): {
+        drop(_1) -> bb6;                 // scope 0 at src/main.rs:5:1: 5:2
+    }
+
+    bb6 (cleanup): {
+        resume;                          // scope 0 at src/main.rs:1:1: 5:2
+    }
+}
+\end{minted}
+
+
+\subsection{Aplicación}
+
+\section{Referencias}
+
+\begin{itemize}
+\item Compilers. Principles, Techniques and Tools (Ahi, Sethi, Ullman, 2nd Edition, 2009), Chapter 10 Instruction-Level Parallelism.
+\item The Rust Programming Language, Chapter 4 Understanding Ownership 
+      ( \url{https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html} ). 
+\item The Rustc Developer Guide, Chapter 44 The Borrow-Checker 
+      ( \url{https://rustc-dev-guide.rust-lang.org/borrow_check.html} ). 
+\end{itemize}
 
 \end{document}
