@@ -1,22 +1,28 @@
 \documentclass[12pt, a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage{titling}
-\usepackage{graphicx}
-\graphicspath{ {./images/} }
-\usepackage[spanish]{babel}
 
-\usepackage{array}
-\usepackage{tabularx}
-\usepackage{lipsum}
-\usepackage{hyperref}
+\usepackage{amsfonts}
+\usepackage{amstex}
 
 \usepackage{amsthm}
 \newtheorem{theorem}{Teorema}[section]
 \newtheorem{lemma}[theorem]{Lema}
 
+\usepackage{array}
+\usepackage[spanish]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{lipsum}
+
 \usepackage{minted}
 \newminted{rust}{}
 \newmintinline{rust}{}
+
+\usepackage{tabularx}
+\usepackage{titling}
 
 \title{
     \includegraphics[height=0.2\textwidth]{uns-logo}
@@ -34,54 +40,51 @@
 % á é í ó ú ñ
 
 \section{Introducción}
-Este informe documenta tres aplicaciones del algoritmo para encontrar \textbf{Componentes Fuertemente Conexos} en el contexto de compiladores de lenguajes de programación.
 
-Las primeras dos aplicaciones, la planificación de paralelismo a nivel de instrucciones para aprovechar recursos de microprocesador (\textit{instruction-level parallelism scheduling}), y el ánalisis de punteros sensible al contexto, son aplicaciones tradicionales y conocidas. 
-El último ejemplo, el uso de CFCs en el grafo de flujo de llamadas (\textit{call-flow graph}) para mejorar el análisis estatico en el compilador de Rust, es más novedoso.
+Este informe documenta una aplicación del algoritmo para encontrar \textbf{Componentes Fuertemente Conexos} en el grafo de flujo de llamadas construido por el compilador del lenguaje de programacion Rust durante su ejecución.
 
 \section{Componentes Fuertemente Conexos}
 
-A graph is said to be strongly connected if every vertex in the graph is reachable from every other vertex.
+Recordemos que se dice que un grafo dirigo es fuertemente conexo si todo nodo del grafo es alcanzable desde cualquier otro nodo.
 
-\section{Planificación de Paralelismo a Nivel de Instrucciones}
+Dado un grafo dirigido $G = \langle G, A \rangle$ un \textit{componente fuertemente conexo} (CFC) es un conjunto $U \subseteq N$ maximal tal que para todo $u, v \in U$ valen $u \rightsquigarrow_{G} v$ y $v \rightsquigarrow_{G} u$, donde $a \rightsquigarrow_{G} b$ significa que existe un camino en $G$ desde $a$ a $b$.
 
-\subsection{Contexto}
+Sea $G = \langle N,A \rangle$ un grafo dirigido, entonces su grafo de componentes es $G_{CFC} = \langle N_{CFC}, A_{CFC} \rangle$, donde $N_{CFC}$ está formado por un nodo que representa a cada CFC de $G$, y para cada par de CFCs $u, v$ se agrega un arco $(u,v)$ en $A_{CFC}$ si en $G$ existe en el componente $u$ un nodo que presenta un arco hacia otro nodo en el componente $v$.
 
-\subsection{Aplicación}
+Es interesante observar que los componentes fuertemente conexos de un grafo dirigido establecen una relación de equivalencia entre los nodos tal que $u \sim v$ si y solo si $u \rightsquigarrow_{G} v$ y $v \rightsquigarrow_{G} u$, y por lo tanto los CFC de un grafo representan clases de equivalencia definidas por esta relación.
 
-\section{Análisis de Punteros Sensible al Contexto}
+Otra propiedad interesante es que dado un grafo dirigido G, entonces $G_{CFC}$ es un \textit{grafo dirigido acíclico}.
 
-\subsection{Contexto}
+Existen varias soluciones al problema de encontrar los CFC dado un grafo dirigido, que se pueden clasificar según esten basados en recorridos del grafo o en consultas de accesibilidad (\textit{reachability}).
+Para un grafo dirigido $G = \langle N, A \rangle$, la relación de accesibilidad de G es la clausura transitiva sobre A, esto es, el conjunto de todos los pares ordenados $(u, v)$ de nodos en $N$ para los cuales $u \rightsquigarrow_{G} v$.
 
-\subsection{Aplicación}
+Entre los algoritmos basados en recorridos del grafo esta el algoritmo de Kosaraju (1978) y el de Tarjan (1972).
 
-\section{El \textit{borrow-checker} de Rust}
+El algoritmo de Kosaraju utiliza dos búsquedas en profundidad.
+El primer recorrido se realiza en el grafo original para determinar el orden en que se verifica si un nodo ya se visito, y los explora en caso contrario.
+El segundo recorrido se realiza sobre el grafo traspuesto, y cada exploración recursiva encuentra un componente fuertemente conexo nuevo.
 
-\subsection{Contexto}
+El algoritmo de Tarjan en cambio realiza un único recorrido en profundidad y mantiene una pila de nodos que han sido explorados pero aún no asignados a un componente.
 
-El lenguaje de programación Rust es un lenguaje moderno, de propósito general, compilado, con tipado estático, que ocupa el mismo espacio que C++. 
-Tiene una caracteristica particular: esta diseñado para garantizar que el acceso a memoria sea \textit{seguro}, (\textit{i.e.} no es posible desreferenciar punteros nulos, tener punteros colgantes, o liberar dos veces el mismo puntero) a pesar de no utilizar un recolector de basura o requerir manejo de memoria manual. 
+Si bien el algoritmo de Kosaraju es asintóticamente optimal y ejecuta en $\Theta(N+A)$ (todo algoritmo CFC debe examinar todos los nodos y todos los arcos) y es conceptualmente más simple, no es tan eficiente en la práctica como el de Tarjan.
 
-Para esto se vale de una formalizacion del concepto de pertenencia (\textit{ownership}) en su sistema de tipos. 
-Que un objeto en memoria pertenezca a otro generalmente implica que el dueño decide cuando se libera la memoria asociada al objeto: al destruirse el dueño, todas sus pertenencias se destruyen tambien. 
+En general, los algoritmos basados en recorridos son eficientes pero se consideran difíciles de paralelizar, por lo cual surgen los algoritmos basado en accesibilidad más nuevos.
+Estos utilizan la estrategia de dividir y conquistar, calculando la relación de accesibilidad, eligiendo un nodo pivot, y realizando consultas sobre la relación hacia adelante y hacia atrás desde este nodo.
+Estas dos consultas particionan $N$ en 4 subconjuntos: los nodos alcanzables por ambas, una u otra, o ninguna de las consultas.
+Se puede demostrar que un CFC debe estar contenido en uno de estos subconjuntos.
+El conjunto de nodos alcanzable por ambas consultas forma un CFC, y el algoritmo luego ejecuta recursivamente sobre los otros tres subconjuntos.
 
-% En Rust, este patron admeas se asocia con el de la mutabilidad. 
-% La motivacion detras de este concepto es la observacion que la mayoria de los errores relacionados a memoria ocurren cuando valores en memoria ...
+\section{Contexto: El \textit{borrow-checker} de Rust}
 
-% \begin{center}
-% \begin{tabular}{ |r|c|c|c| } 
-% \hline
-% Tipo             & Ownership         & Alias & Mutable \\ 
-% \hline
-% \texttt{T}       & Owned             &    No & No      \\ 
-% \texttt{mut T}   & Owned             &    No & Si      \\
-% \texttt{\&T}     & Shared Reference  &    Si & No      \\ 
-% \texttt{\&mut T} & Mutable Reference &    No & Si      \\ 
-% \hline
-% \end{tabular}
-% \end{center}
+\subsection{Introducción a las particularidades de Rust}
 
-Este sistema hace valer tres reglas en todo momento: 
+El lenguaje de programación Rust es un lenguaje moderno, de propósito general, compilado, con tipado estático, que ocupa el mismo espacio en la industria que C++.
+Tiene una característica particular: esta diseñado para garantizar que el acceso a memoria sea \textit{seguro}, (\textit{i.e.} no es posible desreferenciar punteros nulos, tener punteros colgantes, o liberar dos veces el mismo puntero) a pesar de no utilizar un recolector de basura o requerir manejo de memoria manual.
+
+Para esto se vale de una formalización del concepto de pertenencia (\textit{ownership}) en su sistema de tipos.
+Que un objeto en memoria pertenezca a otro generalmente implica que el dueño decide cuando se libera la memoria asociada al objeto: al destruirse el dueño, todas sus pertenencias se destruyen tambien.
+
+Este sistema hace valer tres reglas en todo momento:
 
 \begin{enumerate}
 \item Cada valor tiene una variable denominada su \textit{dueña}.
@@ -89,93 +92,385 @@ Este sistema hace valer tres reglas en todo momento:
 \item Cuando una dueña sale de alcance, su valor sera destruido (\textit{i.e.} su memoria es liberada y el valor no podrá ser utilizado).
 \end{enumerate}
 
-La pertenencia puede ser transferida, o se puede efectuar un "prestamo": ...
+La pertenencia puede ser transferida, o se puede efectuar un "préstamo" cuando en lugar de mover la pertenencia de un objeto en memoria a otra dueña, se pasa una referencia al valor original.
 
-Estas reglas aseguran varias propiedades:
+El propósito de las reglas de pertenencia de Rust es asegurar que nunca puede existir en el programa una referencia inválida, y por lo tanto aseguran varias propiedades:
 
 \begin{enumerate}
-\item Todas las variables estan inicializadas antes de ser usadas. 
+\item Todas las variables están inicializadas antes de ser usadas.
 \item No se puede mover un mismo valor dos veces.
 \item No se puede mover un valor que ha sido prestado.
-\item No se puede acceder una locacion de memoria mientras ha sido prestada de manera mutable (salvo a traves de una referencia mutable).
-\item No se puede mutar una locacion de memoria mientras este tomada en prestamo de manera inmutable. 
+\item No se puede acceder una locación de memoria mientras ha sido prestada de manera mutable (salvo a través de una referencia mutable).
+\item No se puede mutar una locación de memoria mientras esté tomada en préstamo de manera inmutable.
 \end{enumerate}
 
-El compilador de Rust convierte el codigo fuente sucesivamente en distintas representaciones intermedias, hasta llegar al MIR (\textit{Mid-level Intermediate Representation}), una representacion intermedia basada en un grafo de flujo de llamadas. 
-Sobre esta reprepresentacion en forma de grafo se verifican las propiedades de las cuales es responsable el \textit{borrow-checker}, la fase del compilador que hace valer las reglas de pertenencia.
+Cada referencia en Rust tiene un \textit{lifetime}, el cual es el alcance en el cual esa referencia es válida.
+Una definición informal del \textit{lifetime} de una referencia es el conjunto de lineas de código en las cuales la referencia es válida.
+La mayor parte del tiempo, el compilador infiere estos \textit{lifetimes} implícitos a partir del código, aunque la sintaxis admite que el o la programadora lo explicite.
 
-A modo de ejemplo, ...
-
-
-Otro ejemplo...
+A modo de ejemplo, el siguiente código Rust no compila:
 
 \begin{minted}[fontsize=\small]{rust}
-fn main() {
-    let mut vec = Vec::new();
-    vec.push(1);
-    vec.push(2);
-}
+{
+    let r;                // ---------+-- 'a
+    {                     //          |
+        let x = 5;        // -+-- 'b  |
+        r = &x;           //  |       |
+    }                     // -+       |
+    println!("r: {}", r); //          |
+}                         // ---------+
 \end{minted}
 
-\url{https://play.rust-lang.org/?gist=30074856e62e74e91f06abd19bd72ece&version=stable}
+En este listado, las variables \texttt{r} y \texttt{x} tienen \textit{lifetimes} \texttt{'a} y \texttt{'b}, respectivamente.
+
+El bloque del alcance \texttt{'b} es más pequeño que el bloque del alcance exterior \texttt{'a}.
+Las reglas de pertenencia establecen que al llegar al final del alcance \texttt{'b}, el valor de \texttt{x} debe ser destruido.
+Al efectuar la compilación, el compilador compara los dos \textit{lifetimes} y nota que \texttt{r} tiene el \textit{lifetime} \texttt{'a} pero contiene una referencia a la memoria que tiene el \textit{lifetime} \texttt{'b}.
+El programa es rechazado porque \texttt{'b} es mas pequeño que \texttt{'a}: el objeto referenciado no vive tanto como la referencia, y por lo tanto la referencia seria inválida.
+
+La siguiente modificación evita tener una referencia colgante y compila sin errores:
 
 \begin{minted}[fontsize=\small]{rust}
-fn main() -> () {
-    let mut _0: ();                      // return place in scope 0 at src/main.rs:1:11: 1:11
-    let mut _1: std::vec::Vec<i32>;      // in scope 0 at src/main.rs:2:9: 2:16
-    let _2: ();                          // in scope 0 at src/main.rs:3:5: 3:16
-    let mut _3: &mut std::vec::Vec<i32>; // in scope 0 at src/main.rs:3:5: 3:8
-    let _4: ();                          // in scope 0 at src/main.rs:4:5: 4:16
-    let mut _5: &mut std::vec::Vec<i32>; // in scope 0 at src/main.rs:4:5: 4:8
-    scope 1 {
-        debug vec => _1;                 // in scope 1 at src/main.rs:2:9: 2:16
-    }
-
-    bb0: {
-        _1 = Vec::<i32>::new() -> bb1;   // scope 0 at src/main.rs:2:19: 2:29
-                                         // mir::Constant
-                                         // + span: src/main.rs:2:19: 2:27
-                                         // + user_ty: UserType(0)
-                                         // + literal: Const { ty: fn() -> std::vec::Vec<i32> {std::vec::Vec::<i32>::new}, val: Value(Scalar(<ZST>)) }
-    }
-
-    bb1: {
-        _3 = &mut _1;                    // scope 1 at src/main.rs:3:5: 3:8
-        _2 = Vec::<i32>::push(move _3, const 1_i32) -> [return: bb2, unwind: bb5]; // scope 1 at src/main.rs:3:5: 3:16
-                                         // mir::Constant
-                                         // + span: src/main.rs:3:9: 3:13
-                                         // + literal: Const { ty: for<'r> fn(&'r mut std::vec::Vec<i32>, i32) {std::vec::Vec::<i32>::push}, val: Value(Scalar(<ZST>)) }
-    }
-
-    bb2: {
-        _5 = &mut _1;                    // scope 1 at src/main.rs:4:5: 4:8
-        _4 = Vec::<i32>::push(move _5, const 2_i32) -> [return: bb3, unwind: bb5]; // scope 1 at src/main.rs:4:5: 4:16
-                                         // mir::Constant
-                                         // + span: src/main.rs:4:9: 4:13
-                                         // + literal: Const { ty: for<'r> fn(&'r mut std::vec::Vec<i32>, i32) {std::vec::Vec::<i32>::push}, val: Value(Scalar(<ZST>)) }
-    }
-
-    bb3: {
-        _0 = const ();                   // scope 0 at src/main.rs:1:11: 5:2
-        drop(_1) -> bb4;                 // scope 0 at src/main.rs:5:1: 5:2
-    }
-
-    bb4: {
-        return;                          // scope 0 at src/main.rs:5:2: 5:2
-    }
-
-    bb5 (cleanup): {
-        drop(_1) -> bb6;                 // scope 0 at src/main.rs:5:1: 5:2
-    }
-
-    bb6 (cleanup): {
-        resume;                          // scope 0 at src/main.rs:1:1: 5:2
-    }
-}
+{
+    let x = 5;            // ----------+-- 'b
+                          //           |
+    let r = &x;           // --+-- 'a  |
+                          //   |       |
+    println!("r: {}", r); //   |       |
+                          // --+       |
+}                         // ----------+
 \end{minted}
 
+Aqui, \texttt{x} tiene el \textit{lifetime} \texttt{'b}, el cual en este caso es mas grande que \texttt{'a}.
+Esto significa que \texttt{r} puede referenciar a \texttt{x} porque el compilador puede garantizar que la referencia en \texttt{r} siempre sera válida mientras lo sea \texttt{x}.
 
-\subsection{Aplicación}
+\subsection{MIR: Representacion Intermedia}
+
+Cómo se implementa la verificación y aplicación de las reglas de pertenencia?
+
+El compilador de Rust convierte el código fuente sucesivamente en distintas representaciones intermedias, hasta llegar al MIR (\textit{Mid-level Intermediate Representation}), una representación intermedia basada en un grafo de flujo de llamadas.
+
+% A control-flow graph (CFG) is a common term from compilers. If you've ever used a flow-chart, then the concept of a control-flow graph will be pretty familiar to you. It's a representation of your program that clearly exposes the underlying control flow.
+
+% A control-flow graph is structured as a set of basic blocks connected by edges. The key idea of a basic block is that it is a set of statements that execute "together" – that is, whenever you branch to a basic block, you start at the first statement and then execute all the remainder. Only at the end of the block is there the possibility of branching to more than one place (in MIR, we call that final statement the terminator):
+
+% bb0: {
+%     statement0;
+%     statement1;
+%     statement2;
+%     ...
+%     terminator;
+% }
+
+% A modo de ejemplo, ...
+
+% \begin{minted}[fontsize=\small]{rust}
+% a = 1;
+% if some_variable {
+%     b = 1;
+% } else {
+%     c = 1;
+% }
+% d = 1;
+% \end{minted}
+
+% \begin{minted}[fontsize=\small]{rust}
+% BB0: {
+%     a = 1;
+%     if some_variable {
+%         goto BB1;
+%     } else {
+%         goto BB2;
+%     }
+% }
+
+% BB1: {
+%     b = 1;
+%     goto BB3;
+% }
+
+% BB2: {
+%     c = 1;
+%     goto BB3;
+% }
+
+% BB3: {
+%     d = 1;
+%     ...
+% }
+% \end{minted}
+
+%               BB0
+%      +--------------------+
+%      | a = 1;             |
+%      +--------------------+
+%            /       \
+% if some_variable   else
+%          /           \
+%    BB1  /             \  BB2
+%   +-----------+   +-----------+
+%   | b = 1;    |   | c = 1;    |
+%   +-----------+   +-----------+
+%           \          /
+%            \        /
+%             \ BB3  /
+%           +----------+
+%           | d = 1;   |
+%           | ...      |
+%           +----------+
+
+% Otro ejemplo...
+
+% \begin{minted}[fontsize=\small]{rust}
+% fn main() {
+%     let mut vec = Vec::new();
+%     vec.push(1);
+%     vec.push(2);
+% }
+% \end{minted}
+
+% \url{https://play.rust-lang.org/?gist=30074856e62e74e91f06abd19bd72ece&version=stable}
+
+Sobre el grafo de MIR se verifican las propiedades de las cuales es responsable el \textit{borrow-checker}, la fase del compilador que hace valer las reglas de pertenencia.
+El \textit{borrow-checker} realiza una serie de análisis sobre el flujo de datos que computan que valores se mueven y cuando, y cuales referencian otros valores.
+
+En el contexto del compilador y en la literatura, a los \textit{lifetimes} también se les llama regiones.
+Como parte del checkeo de tipos y valores que realiza el \textit{borrow-checker}, se infieren las regiones, se computan los valores de cada region y determinan las restricciones que aplican entre regiones en un proceso de propagación de restricciones,
+
+Region variables
+
+El valor de cada region puede ser considerado como un conjunto de
+i.e. los valores de las regiones son los nodos en el grafo de flujo de control en el cual cada \textit{lifetime} debe ser válida de acuerdo a las restricciones propagadas.
+
+The value of a region can be thought of as a set. This set contains all points in the MIR where the region is valid along with any regions that are outlived by this region (e.g. if 'a: 'b, then end('b) is in the set for 'a).
+
+For each region we maintain a set storing what elements are present in its value (to make this efficient, we give each kind of element an index, the RegionElementIndex, and use sparse bitsets).
+
+Constraints
+
+Before we can infer the value of regions, we need to collect constraints on the regions. The full set of constraints is described in the section on constraint propagation, but the two most common sorts of constraints are:
+
+    Outlives constraints. These are constraints that one region outlives another (e.g. 'a: 'b). Outlives constraints are generated by the MIR type checker.
+    Liveness constraints. Each region needs to be live at points where it can be used. These constraints are collected by generate_constraints.
+
+Inference Overview
+
+So how do we compute the contents of a region? This process is called region inference. The high-level idea is pretty simple, but there are some details we need to take care of.
+
+Here is the high-level idea: we start off each region with the MIR locations we know must be in it from the liveness constraints. From there, we use all of the outlives constraints computed from the type checker to propagate the constraints: for each region 'a, if 'a: 'b, then we add all elements of 'b to 'a, including end('b). This all happens in propagate_constraints.
+
+\section{Aplicación}
+
+The main work of the region inference is constraint propagation, which is done in the propagate_constraints function. There are three sorts of constraints that are used in NLL, and we'll explain how propagate_constraints works by "layering" those sorts of constraints on one at a time (each of them is fairly independent from the others):
+
+    liveness constraints (R live at E), which arise from liveness;
+    outlives constraints (R1: R2), which arise from subtyping;
+    member constraints (member R_m of [R_c...]), which arise from impl Trait.
+
+In this chapter, we'll explain the "heart" of constraint propagation, covering both liveness and outlives constraints.
+
+## Notation and high-level concepts
+
+Conceptually, region inference is a "fixed-point" computation. It is
+given some set of constraints `{C}` and it computes a set of values
+`Values: R -> {E}` that maps each region `R` to a set of elements
+`{E}` (see [here][riv] for more notes on region elements):
+
+- Initially, each region is mapped to an empty set, so `Values(R) =
+  {}` for all regions `R`.
+- Next, we process the constraints repeatedly until a fixed-point is reached:
+  - For each constraint C:
+    - Update `Values` as needed to satisfy the constraint
+
+As a simple example, if we have a liveness constraint `R live at E`,
+then we can apply `Values(R) = Values(R) union {E}` to make the
+constraint be satisfied. Similarly, if we have an outlives constraints
+`R1: R2`, we can apply `Values(R1) = Values(R1) union Values(R2)`.
+(Member constraints are more complex and we discuss them [in this section][m_c].)
+
+In practice, however, we are a bit more clever. Instead of applying
+the constraints in a loop, we can analyze the constraints and figure
+out the correct order to apply them, so that we only have to apply
+each constraint once in order to find the final result.
+
+Similarly, in the implementation, the `Values` set is stored in the
+`scc_values` field, but they are indexed not by a *region* but by a
+*strongly connected component* (SCC). SCCs are an optimization that
+avoids a lot of redundant storage and computation.  They are explained
+in the section on outlives constraints.
+
+## Liveness constraints
+
+A **liveness constraint** arises when some variable whose type
+includes a region R is live at some [point] P. This simply means that
+the value of R must include the point P. Liveness constraints are
+computed by the MIR type checker.
+
+[point]: ../../appendix/glossary.md#point
+
+A liveness constraint `R live at E` is satisfied if `E` is a member of
+`Values(R)`. So to "apply" such a constraint to `Values`, we just have
+to compute `Values(R) = Values(R) union {E}`.
+
+The liveness values are computed in the type-check and passed to the
+region inference upon creation in the `liveness_constraints` argument.
+These are not represented as individual constraints like `R live at E`
+though; instead, we store a (sparse) bitset per region variable (of
+type [`LivenessValues`]). This way we only need a single bit for each
+liveness constraint.
+
+[`liveness_constraints`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/region_infer/struct.RegionInferenceContext.html#structfield.liveness_constraints
+[`LivenessValues`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/region_infer/values/struct.LivenessValues.html
+
+One thing that is worth mentioning: All lifetime parameters are always
+considered to be live over the entire function body. This is because
+they correspond to some portion of the *caller's* execution, and that
+execution clearly includes the time spent in this function, since the
+caller is waiting for us to return.
+
+## Outlives constraints
+
+An outlives constraint `'a: 'b` indicates that the value of `'a` must
+be a **superset** of the value of `'b`. That is, an outlives
+constraint `R1: R2` is satisfied if `Values(R1)` is a superset of
+`Values(R2)`. So to "apply" such a constraint to `Values`, we just
+have to compute `Values(R1) = Values(R1) union Values(R2)`.
+
+One observation that follows from this is that if you have `R1: R2`
+and `R2: R1`, then `R1 = R2` must be true. Similarly, if you have:
+
+```txt
+R1: R2
+R2: R3
+R3: R4
+R4: R1
+```
+
+then `R1 = R2 = R3 = R4` follows. We take advantage of this to make things
+much faster, as described shortly.
+
+In the code, the set of outlives constraints is given to the region
+inference context on creation in a parameter of type
+[`OutlivesConstraintSet`]. The constraint set is basically just a list of `'a:
+'b` constraints.
+
+### The outlives constraint graph and SCCs
+
+In order to work more efficiently with outlives constraints, they are
+[converted into the form of a graph][graph-fn], where the nodes of the
+graph are region variables (`'a`, `'b`) and each constraint `'a: 'b`
+induces an edge `'a -> 'b`. This conversion happens in the
+[`RegionInferenceContext::new`] function that creates the inference
+context.
+
+[`OutlivesConstraintSet`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/constraints/struct.OutlivesConstraintSet.html
+[graph-fn]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/constraints/struct.OutlivesConstraintSet.html#method.graph
+[`RegionInferenceContext::new`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/region_infer/struct.RegionInferenceContext.html#method.new
+
+When using a graph representation, we can detect regions that must be equal
+by looking for cycles. That is, if you have a constraint like
+
+```txt
+'a: 'b
+'b: 'c
+'c: 'd
+'d: 'a
+```
+
+then this will correspond to a cycle in the graph containing the
+elements `'a...'d`.
+
+Therefore, one of the first things that we do in propagating region
+values is to compute the **strongly connected components** (SCCs) in
+the constraint graph. The result is stored in the [`constraint_sccs`]
+field. You can then easily find the SCC that a region `r` is a part of
+by invoking `constraint_sccs.scc(r)`.
+
+Working in terms of SCCs allows us to be more efficient: if we have a
+set of regions `'a...'d` that are part of a single SCC, we don't have
+to compute/store their values separately. We can just store one value
+**for the SCC**, since they must all be equal.
+
+If you look over the region inference code, you will see that a number
+of fields are defined in terms of SCCs. For example, the
+[`scc_values`] field stores the values of each SCC. To get the value
+of a specific region `'a` then, we first figure out the SCC that the
+region is a part of, and then find the value of that SCC.
+
+[`constraint_sccs`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/region_infer/struct.RegionInferenceContext.html#structfield.constraint_sccs
+[`scc_values`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_mir/borrow_check/region_infer/struct.RegionInferenceContext.html#structfield.scc_values
+
+When we compute SCCs, we not only figure out which regions are a
+member of each SCC, we also figure out the edges between them. So for example
+consider this set of outlives constraints:
+
+```txt
+'a: 'b
+'b: 'a
+
+'a: 'c
+
+'c: 'd
+'d: 'c
+```
+
+Here we have two SCCs: S0 contains `'a` and `'b`, and S1 contains `'c`
+and `'d`.  But these SCCs are not independent: because `'a: 'c`, that
+means that `S0: S1` as well. That is -- the value of `S0` must be a
+superset of the value of `S1`. One crucial thing is that this graph of
+SCCs is always a DAG -- that is, it never has cycles. This is because
+all the cycles have been removed to form the SCCs themselves.
+
+### Applying liveness constraints to SCCs
+
+The liveness constraints that come in from the type-checker are
+expressed in terms of regions -- that is, we have a map like
+`Liveness: R -> {E}`.  But we want our final result to be expressed
+in terms of SCCs -- we can integrate these liveness constraints very
+easily just by taking the union:
+
+```txt
+for each region R:
+  let S be the SCC that contains R
+  Values(S) = Values(S) union Liveness(R)
+```
+
+In the region inferencer, this step is done in [`RegionInferenceContext::new`].
+
+### Applying outlives constraints
+
+Once we have computed the DAG of SCCs, we use that to structure out
+entire computation. If we have an edge `S1 -> S2` between two SCCs,
+that means that `Values(S1) >= Values(S2)` must hold. So, to compute
+the value of `S1`, we first compute the values of each successor `S2`.
+Then we simply union all of those values together. To use a
+quasi-iterator-like notation:
+
+```txt
+Values(S1) =
+  s1.successors()
+    .map(|s2| Values(s2))
+    .union()
+```
+
+In the code, this work starts in the [`propagate_constraints`]
+function, which iterates over all the SCCs. For each SCC `S1`, we
+compute its value by first computing the value of its
+successors. Since SCCs form a DAG, we don't have to be concerned about
+cycles, though we do need to keep a set around to track whether we
+have already processed a given SCC or not. For each successor `S2`, once
+we have computed `S2`'s value, we can union those elements into the
+value for `S1`. (Although we have to be careful in this process to
+properly handle [higher-ranked
+placeholders](./placeholders_and_universes.html). Note that the value
+for `S1` already contains the liveness constraints, since they were
+added in [`RegionInferenceContext::new`].
+
+Once that process is done, we now have the "minimal value" for `S1`,
+taking into account all of the liveness and outlives
+constraints. However, in order to complete the process, we must also
+consider [member constraints][m_c], which are described in [a later
+section][m_c].
 
 \section{Referencias}
 
