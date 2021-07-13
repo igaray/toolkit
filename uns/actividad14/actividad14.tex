@@ -164,7 +164,7 @@ El valor de cada region puede ser considerado como un conjunto, el cual contiene
 
 The value of a region can be thought of as a set. This set contains all points in the MIR where the region is valid along with any regions that are outlived by this region (e.g. if 'a: 'b, then end('b) is in the set for 'a).
 
-For each region we maintain a set storing what elements are present in its value (to make this efficient, we give each kind of element an index, the RegionElementIndex, and use sparse bitsets).
+Por cada region, se mantiene un conjunto que almacena cuales elementos estan presentes. Para hacerlo de manera eficiente, a cada elemente se le calcula un indice, y se utiliza un conjunto de bits ralo (sparse bitset). 
 
 Constraints
 
@@ -175,7 +175,11 @@ Before we can infer the value of regions, we need to collect constraints on the 
 
 Inference Overview
 
-So how do we compute the contents of a region? This process is called region inference. The high-level idea is pretty simple, but there are some details we need to take care of.
+Como se computan los contenidos de una region?
+Este proceso se denomina inferencia de regiones.
+
+Se inicia cada region con las locaciones de MIR que deben estar en la region segun las restricciones de vida 
+A partir de ahi, se utilizan las restricciones de supervivencia 
 
 Here is the high-level idea: we start off each region with the MIR locations we know must be in it from the liveness constraints. From there, we use all of the outlives constraints computed from the type checker to propagate the constraints: for each region 'a, if 'a: 'b, then we add all elements of 'b to 'a, including end('b).
 
@@ -184,8 +188,6 @@ The main work of the region inference is constraint propagation. There are three
     liveness constraints (R live at E), which arise from liveness;
     outlives constraints (R1: R2), which arise from subtyping;
     member constraints (member $R_m$ of [$R_c$...]), which arise from impl Trait.
-
-In this chapter, we'll explain the "heart" of constraint propagation, covering both liveness and outlives constraints.
 
 Notation and high-level concepts
 
