@@ -3,3 +3,4 @@
 name = "mmix"
 version = "0.0.1"
 authors = [ "Inaki Garay <igarai@gmail.com>" ]
+edition = "2021"
