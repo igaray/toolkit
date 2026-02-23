@@ -1,8 +1,0 @@
-[package]
-name = "playground"
-version = "0.0.1"
-authors = [ "Iñaki Garay <igarai@gmail.com>" ]
-
-[dependencies]
-clap = "2"
-regex = "1"
